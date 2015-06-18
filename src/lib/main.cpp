@@ -71,6 +71,7 @@
 #include <botan/pk_keys.h>
 #include <botan/bigint.h>
 #include <botan/rsa.h>
+#include <pkcs11.h>
 
 // Keeps the internal state
 std::auto_ptr<SoftHSMInternal> state(NULL);

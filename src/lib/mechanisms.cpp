@@ -30,6 +30,7 @@
 *
 ************************************************************/
 
+#include <pkcs11.h>
 #include "mechanisms.h"
 #include "log.h"
 

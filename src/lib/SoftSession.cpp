@@ -38,6 +38,7 @@
 #include <botan/libstate.h>
 #include <botan/if_algo.h>
 #include <botan/rsa.h>
+#include <pkcs11.h>
 
 SoftSession::SoftSession(CK_FLAGS rwSession, SoftSlot *givenSlot, char *appID) {
   pApplication = NULL_PTR;
