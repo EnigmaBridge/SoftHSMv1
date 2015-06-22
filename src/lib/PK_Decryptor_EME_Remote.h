@@ -64,15 +64,14 @@ protected:
      */
     ShsmPrivateKey * privKey = NULL;
 
-public:
-    PK_Decryptor_EME_Remote(const ShsmPrivateKey &key, const std::string &eme,
-                            const ShsmConnectionConfig &connectionConfig) : PK_Decryptor_EME(key, eme),
-                                                                            connectionConfig(&connectionConfig) { }
+    /**
+     * Keep padding information also here.
+     */
+    std::string eme;
 
+public:
     PK_Decryptor_EME_Remote(const ShsmPrivateKey * key, const std::string &eme,
                             const SoftSlot * curSlot);
-
-    PK_Decryptor_EME_Remote(const ShsmPrivateKey &key, const std::string &eme) : PK_Decryptor_EME(key, eme) { }
 
     const ShsmConnectionConfig * getConnectionConfig() const {
         return connectionConfig;

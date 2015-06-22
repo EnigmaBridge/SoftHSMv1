@@ -33,6 +33,13 @@ public:
      */
     static std::string getRequestDecrypt(ShsmPrivateKey * privKey, std::string key, const Botan::byte byte[], size_t t, std::string nonce);
 
+    /**
+     * Removes PKCS1.5 padding from the input buffer and places output to the output buffer.
+     * Returns size of the unpadded data in the output buffer or negative in case of a padding failure.
+     * Output buffer can be also the input buffer, so it is done in-place.
+     */
+    static ssize_t removePkcs15Padding(const Botan::byte * buff, size_t len, Botan::byte * out, size_t maxLen, int * status);
+
 };
 
 

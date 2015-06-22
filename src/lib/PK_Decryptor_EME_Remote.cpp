@@ -23,6 +23,7 @@ PK_Decryptor_EME_Remote::PK_Decryptor_EME_Remote(const ShsmPrivateKey * key,
         return;
     }
 
+    this->eme = eme;
     this->privKey = key;
     this->connectionConfig = new ShsmConnectionConfig(host, port);
     this->connectionConfig->setKey(ckey);
@@ -77,14 +78,29 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
 
     // Allocate memory buffer for decrypted block, convert from hexa string coding to bytes
     const size_t decHexLen = decrytpedHexCoded.length();
-    Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * decHexLen / 2);
-    ShsmApiUtils::hexToBytes(decrytpedHexCoded, buff, decHexLen / 2);
 
-    // TODO: remove PKCS#5 padding.
-    // ...
+    ssize_t bufferLen = decHexLen / 2;
+    Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * bufferLen);
+    ShsmApiUtils::hexToBytes(decrytpedHexCoded, buff, bufferLen);
+
+    // Remove PKCS#1 1.5 padding.
+    if (this->eme == "EME-PKCS1-v1_5"){
+        int paddingStatus = 0;
+        ssize_t newSize = ShsmUtils::removePkcs15Padding(buff, decHexLen / 2, buff, decHexLen / 2, &paddingStatus);
+        if (newSize < 0){
+            ERROR_MSG("decryptCall", "Decrypt error, padding cannot be removed.")
+            return errRet;
+        }
+
+        bufferLen = newSize;
+
+    } else {
+        ERROR_MSG("decryptCall", "Padding cannot be determined.");
+        return errRet;
+    }
 
     // Allocate new secure vector and return it.
-    return Botan::SecureVector<Botan::byte>(buff, decHexLen / 2);
+    return Botan::SecureVector<Botan::byte>(buff, bufferLen);
 }
 
 Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::dec(const Botan::byte byte[], size_t t) const {
