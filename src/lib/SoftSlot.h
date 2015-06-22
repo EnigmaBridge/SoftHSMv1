@@ -46,6 +46,7 @@ class SoftSlot {
     ~SoftSlot();
 
     void addSlot(CK_SLOT_ID newSlotID, char *newDBPath);
+    void addSlot(CK_SLOT_ID newSlotID, char *newDBPath, std::string host, int port, std::string key);
     SoftSlot *getSlot(CK_SLOT_ID getID);
     SoftSlot *getNextSlot();
     CK_SLOT_ID getSlotID();
@@ -62,7 +63,23 @@ class SoftSlot {
     char *hashedUserPIN;
     char *hashedSOPIN;
 
-  private:
+    std::string host;
+    int port;
+    std::string key;
+
+    int getPort() const {
+      return port;
+    }
+
+    const std::string &getHost() const {
+      return host;
+    }
+
+    const std::string &getKey() const {
+      return key;
+    }
+
+private:
     CK_SLOT_ID slotID;
     SoftSlot *nextSlot;
 };

@@ -48,6 +48,9 @@ SoftSlot::SoftSlot() {
   nextSlot = NULL_PTR;
   hashedUserPIN = NULL_PTR;
   hashedSOPIN = NULL_PTR;
+  host = "";
+  port = -1;
+  key = "";
 }
 
 SoftSlot::~SoftSlot() {
@@ -62,11 +65,15 @@ SoftSlot::~SoftSlot() {
 
 // Add a new slot last in the chain
 
-void SoftSlot::addSlot(CK_SLOT_ID newSlotID, char *newDBPath) {
+void SoftSlot::addSlot(CK_SLOT_ID newSlotID, char *newDBPath, std::string host, int port, std::string key) {
   if(nextSlot == NULL_PTR) {
     nextSlot = new SoftSlot();
     slotID = newSlotID;
     dbPath = newDBPath;
+    this->host = host;
+    this->port = port;
+    this->key = key;
+
     readDB();
   } else {
     // Slots may not share the same ID
@@ -75,8 +82,12 @@ void SoftSlot::addSlot(CK_SLOT_ID newSlotID, char *newDBPath) {
       return;
     }
 
-    nextSlot->addSlot(newSlotID, newDBPath);
+    nextSlot->addSlot(newSlotID, newDBPath, host, port, key);
   }
+}
+
+void SoftSlot::addSlot(CK_SLOT_ID newSlotID, char *newDBPath) {
+  this->addSlot(newSlotID, newDBPath, "", -1, "");
 }
 
 // Find the slot with a given ID

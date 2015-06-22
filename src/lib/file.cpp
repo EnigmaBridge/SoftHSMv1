@@ -34,6 +34,7 @@
 #include <config.h>
 #include "file.h"
 #include "log.h"
+#include "json.h"
 #include "SoftHSMInternal.h"
 
 // Standard includes
@@ -43,12 +44,21 @@
 #include <ctype.h>
 #include <memory>
 
+// Default configuration
+#define CFG_DEFAULT_PORT 11111
+
+// JSON strings
+#define CFG_SLOTS "slots"
+#define CFG_SLOT  "slot"
+#define CFG_DB    "db"
+#define CFG_HOST  "host"
+#define CFG_PORT  "port"
+#define CFG_KEY   "key"
+
 extern std::auto_ptr<SoftHSMInternal> state;
 
-// Reads the config file
-
-CK_RV readConfigFile() {
-  FILE *fp;
+// Config file open. Determines config file path, opens file.
+static CK_RV openConfigFile(FILE ** fp){
   SoftHSMInternal *softHSM = state.get();
 
   const char *confPath = getenv("SOFTHSM_CONF");
@@ -57,15 +67,104 @@ CK_RV readConfigFile() {
     confPath = DEFAULT_SOFTHSM_CONF;
   }
 
-  fp = fopen(confPath,"r");
+  *fp = fopen(confPath,"r");
 
-  if(fp == NULL) {
+  if(*fp == NULL) {
     char errorMsg[1024];
     snprintf(errorMsg, sizeof(errorMsg), "Could not open the config file: %s", confPath);
 
     fprintf(stderr, "SoftHSM: %s\n", errorMsg);
     ERROR_MSG("C_Initialize", errorMsg);
     return CKR_GENERAL_ERROR;
+  }
+
+  return CKR_OK;
+}
+
+// Reads the config file
+CK_RV readConfigFile() {
+  FILE *fp;
+  SoftHSMInternal *softHSM = state.get();
+
+  CK_RV openRes = openConfigFile(&fp);
+  if (openRes != CKR_OK){
+    return openRes;
+  }
+
+  char fileBuf[1024];
+  std::stringstream cfileStream;
+
+  // Format in config file
+  //
+  // slotID:dbPath
+  // # Line is ignored
+  size_t itemsRead = 0;
+  while((itemsRead = fread(fileBuf, sizeof(fileBuf[0]), sizeof(fileBuf), fp)) > 0) {
+    cfileStream.write(fileBuf, itemsRead);
+  }
+  fclose(fp);
+
+  // Parse JSON configuration file.
+  std::string jsonConfig = cfileStream.str();
+  Json::Value root;
+  Json::Reader reader;
+  bool parsedSuccess = reader.parse(jsonConfig, root, false);
+  if(!parsedSuccess) {
+    ERROR_MSG("C_Initialize", "Could not parse JSON config file");
+    return CKR_GENERAL_ERROR;;
+  }
+
+  char errorMsg[1024];
+  const Json::Value slots = root[CFG_SLOTS];
+  for(unsigned int index=0; index < slots.size(); ++index){
+    const Json::Value cslot = slots[index];
+    if (cslot.isNull() || cslot[CFG_SLOT].isNull() || cslot[CFG_DB].isNull()) {
+      snprintf(errorMsg, sizeof(errorMsg), "Invalid slot configuration for line: %d", index);
+      ERROR_MSG("C_Initialize", errorMsg);
+      continue;
+    }
+
+    const Json::Int slotId = cslot[CFG_SLOT].asInt();
+    const std::string slotDb = cslot[CFG_DB].asString();
+
+    // Check if it is SHSM slot.
+    bool isShsm = false;
+    std::string host = "";
+    Json::Int port = -1;
+    std::string key = "";
+
+    // SHSM configuration.
+    if (!cslot[CFG_HOST].isNull()) {
+      host = cslot[CFG_HOST].asString();
+      port = cslot[CFG_PORT].isNull() ? CFG_DEFAULT_PORT : cslot[CFG_PORT].asInt();
+      key = cslot[CFG_KEY].isNull() ? "" : cslot[CFG_KEY].asString();
+      isShsm = true;
+    }
+
+    // Allocate char * buffer for slot database path.
+    char *realPath = (char *)malloc(slotDb.length() + 1);
+    if(realPath == NULL_PTR) {
+      continue;
+    }
+
+    realPath[slotDb.length()] = '\0';
+    memcpy(realPath, slotDb.c_str(), slotDb.length());
+
+    // Add the slot.
+    softHSM->slots->addSlot(slotId, realPath, host, port, key);
+  }
+
+  return CKR_OK;
+}
+
+// Reads the config file
+CK_RV readConfigFileOld() {
+  FILE *fp;
+  SoftHSMInternal *softHSM = state.get();
+
+  CK_RV openRes = openConfigFile(&fp);
+  if (openRes != CKR_OK){
+    return openRes;
   }
 
   char fileBuf[1024];
