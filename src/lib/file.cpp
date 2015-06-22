@@ -67,10 +67,12 @@ static CK_RV openConfigFile(FILE ** fp){
     confPath = DEFAULT_SOFTHSM_CONF;
   }
 
+  char errorMsg[1024];
+  snprintf(errorMsg, sizeof(errorMsg), "Using configuration file: %s", confPath);
+  DEBUG_MSG("C_Initialize", errorMsg);
   *fp = fopen(confPath,"r");
 
   if(*fp == NULL) {
-    char errorMsg[1024];
     snprintf(errorMsg, sizeof(errorMsg), "Could not open the config file: %s", confPath);
 
     fprintf(stderr, "SoftHSM: %s\n", errorMsg);
@@ -103,6 +105,7 @@ CK_RV readConfigFile() {
     cfileStream.write(fileBuf, itemsRead);
   }
   fclose(fp);
+  char errorMsg[4096];
 
   // Parse JSON configuration file.
   std::string jsonConfig = cfileStream.str();
@@ -110,11 +113,11 @@ CK_RV readConfigFile() {
   Json::Reader reader;
   bool parsedSuccess = reader.parse(jsonConfig, root, false);
   if(!parsedSuccess) {
-    ERROR_MSG("C_Initialize", "Could not parse JSON config file");
+    snprintf(errorMsg, sizeof(errorMsg), "Could not parse JSON config file: %s", jsonConfig.c_str());
+    ERROR_MSG("C_Initialize", errorMsg);
     return CKR_GENERAL_ERROR;;
   }
 
-  char errorMsg[1024];
   const Json::Value slots = root[CFG_SLOTS];
   for(unsigned int index=0; index < slots.size(); ++index){
     const Json::Value cslot = slots[index];

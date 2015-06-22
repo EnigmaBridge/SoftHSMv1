@@ -14,9 +14,9 @@ protected:
     const static std::string SHSM_HOST_DEFAULT;
     const static int         REQUEST_TIMEOUT_DEFAULT;
 
-    std::string  mHost = SHSM_HOST_DEFAULT;
-    int          mPort = SHSM_PORT_DEFAULT;
-    int          mTimeout = REQUEST_TIMEOUT_DEFAULT;
+    std::string  mHost;
+    int          mPort;
+    int          mTimeout;
 
     /**
      * Encryption key used for communication with SHSM.
@@ -32,7 +32,7 @@ protected:
 
 public:
 
-    ShsmConnectionConfig(const std::string &mHost, int mPort) : mHost(mHost), mPort(mPort) { }
+    ShsmConnectionConfig(const std::string &mHost, int mPort) : mHost(mHost), mPort(mPort), mTimeout(REQUEST_TIMEOUT_DEFAULT) { }
 
 
     ShsmConnectionConfig(const std::string &mHost, int mPort, int mTimeout) : mHost(mHost), mPort(mPort),
