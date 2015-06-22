@@ -7,6 +7,7 @@
 
 #include <botan/types.h>
 #include <string>
+#include <json/json.h>
 
 // Boolean attribute for private keys, if set to true, the private key is stored in SHSM.
 #define CKA_SHSM_KEY (CKA_VENDOR_DEFINED + 0x100)
@@ -66,7 +67,22 @@ public:
     /**
      * Generates JSON request for certificate generation.
      */
-    static std::string genRequestForCertGen(long bitsize, const char *alg, const char *dn);
+    static std::string getRequestForCertGen(long bitsize, const char *alg, const char *dn);
+
+    /**
+     * Returns request string for query for SHSM public key.
+     */
+    static std::string getRequestShsmPubKey(std::string nonce);
+
+    /**
+     * Extracts status value as an integer from the JSON response.
+     */
+    static int getStatus(Json::Value &root);
+
+    /**
+     * Computes size of the array needed to hold decoded hex-coded byte array.
+     */
+    static ssize_t getJsonByteArraySize(std::string &input);
 };
 
 

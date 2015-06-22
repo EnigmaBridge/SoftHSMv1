@@ -2,6 +2,7 @@
 // Created by Dusan Klinec on 22.06.15.
 //
 
+#include <iostream>     // std::cout
 #include <json.h>
 #include <sstream>
 #include <iomanip>
@@ -10,12 +11,14 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <string.h>
 #include <stdexcept>
 #include <strings.h>
 #include <iomanip>
 #include <string>
 #include <iomanip>
 #include <botan/types.h>
+#include <stdio.h>
 
 #define READ_STRING_BUFFER_SIZE 8192
 
@@ -78,7 +81,7 @@ std::string ShsmApiUtils::readStringFromSocket(int sockfd) {
     char buffer[READ_STRING_BUFFER_SIZE];
 
     ssize_t bytesRead = 0;
-    while((bytesRead = read(sockfd, buffer, READ_STRING_BUFFER_SIZE)) >= 0){
+    while((bytesRead = read(sockfd, buffer, READ_STRING_BUFFER_SIZE)) > 0){
         sb.write(buffer, bytesRead);
     }
 
@@ -124,33 +127,34 @@ std::string ShsmApiUtils::bytesToHex(const Botan::byte * byte, size_t len) {
 
 int ShsmApiUtils::hexToBytes(std::string input, Botan::byte * buff, size_t maxLen) {
     const size_t len = input.length();
-    if (len & 1) {
-        throw std::invalid_argument("odd length");
-    }
-
-    for(size_t i = 0; i < len && i < maxLen*2; i++) {
+    size_t curByte = 0;
+    for(size_t i = 0; i < len && curByte < maxLen*2; i++) {
         const char a = input[i];
         int ahex = 0;
         if (a >= '0' && a <= '9') {
             ahex = (a - '0');
         } else if (a >= 'A' && a <= 'F') {
-            ahex = (a - 'A' + 10);
-        } else if (a >= 'a' && a <= 'f'){
-            ahex = (a - 'a' + 10);
+            ahex = (a - 'A' + 0xa);
+        } else if (a >= 'a' && a <= 'f') {
+            ahex = (a - 'a' + 0xa);
+        } else if (a == ' ' || a == '\n' || a == '\t'){
+            continue;
         } else {
             throw std::invalid_argument("illegal character");
         }
 
-        if (i & 1){
+        if (curByte & 1){
             // Second half-byte, OR. First was already set.
-            buff[i/2] |= ahex & 0xf;
+            buff[curByte/2] |= (unsigned char)(ahex & 0xf);
         } else {
             // First half-byte, SET.
-            buff[i/2]  = (unsigned char)(ahex & 0xf) << 4;
+            buff[curByte/2]  = (unsigned char)(ahex & 0xf) << 4;
         }
+
+        curByte += 1;
     }
 
-    return (int)(len / 2);
+    return (int)(curByte/2);
 }
 
 int ShsmApiUtils::hexdigitToInt(char ch) {
@@ -200,16 +204,17 @@ int ShsmApiUtils::hexdigitToInt(char ch) {
 
 std::string ShsmApiUtils::generateNonce(size_t len) {
     static const char * alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
+    static const size_t alphabetLen = strlen(alphabet);
 
     std::stringstream res;
     for(size_t i = 0; i < len; i++){
-        res << alphabet[rand() % (sizeof(alphabet) - 1)];
+        res << alphabet[rand() % (alphabetLen - 1)];
     }
 
     return res.str();
 }
 
-std::string ShsmApiUtils::genRequestForCertGen(long bitsize, const char *alg, const char *dn) {
+std::string ShsmApiUtils::getRequestForCertGen(long bitsize, const char *alg, const char *dn) {
     // Generate JSON request here.
     Json::Value jReq;
     jReq["function"] = "CreateUserObject";
@@ -230,4 +235,49 @@ std::string ShsmApiUtils::genRequestForCertGen(long bitsize, const char *alg, co
     std::string json = jWriter.write(jReq) + "\n"; // EOL at the end of the request.
     return json;
 }
+
+std::string ShsmApiUtils::getRequestShsmPubKey(std::string nonce) {
+    // Generate JSON request here.
+    Json::Value jReq;
+    jReq["function"] = "GetSHSMPubKey";
+    jReq["version"] = "1.0";
+    jReq["nonce"] = nonce;
+
+    // Build string request body.
+    Json::FastWriter jWriter;
+    std::string json = jWriter.write(jReq) + "\n"; // EOL at the end of the request.
+    return json;
+}
+
+int ShsmApiUtils::getStatus(Json::Value &root) {
+    Json::Value status = root["status"];
+    if (status.isNull()){
+        return -1;
+    }
+
+    if (status.isIntegral()){
+        return status.asInt();
+    }
+
+    if (status.isString()){
+        return atoi(status.asCString());
+    }
+
+    return -2;
+}
+
+ssize_t ShsmApiUtils::getJsonByteArraySize(std::string &input) {
+    const size_t len = input.length();
+    ssize_t totalLen = 0;
+
+    for (size_t i = 0; i < len; i++){
+        const char c = input[i];
+        if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')){
+            totalLen += 1;
+        }
+    }
+
+    return totalLen / 2;
+}
+
 

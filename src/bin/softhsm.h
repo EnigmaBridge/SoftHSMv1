@@ -76,6 +76,7 @@ typedef struct key_material_t {
 void usage();
 int initToken(char *slot, char *label, char *soPIN, char *userPIN);
 int showSlots();
+int getShsmPubKey(char *hostname, int port, char *crtPath);
 int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int port, long bitsize, char *algname, char *dn, char *label, char *objectID, char *crtPath, char *certChainPath);
 int importKeyPair(char *filePath, char *filePIN, char *slot, char *userPIN, char *objectLabel, char *objectID, int forceExec);
 int exportKeyPair(char *filePath, char *filePIN, char *slot, char *userPIN, char *objectID);

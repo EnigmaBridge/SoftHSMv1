@@ -74,53 +74,54 @@ void usage() {
   printf("Support tool for libsofthsm\n");
   printf("Usage: softhsm [OPTIONS]\n");
   printf("Options:\n");
-  printf("  --show-slots      Display all the available slots.\n");
-  printf("  --init-token      Initialize the token at a given slot.\n");
-  printf("                    Use with --slot, --label, --so-pin, and --pin.\n");
-  printf("                    WARNING: Any content in token token will be erased.\n");
-  printf("  --import <path>   Import a key pair from the given path.\n");
-  printf("                    The file must be in PKCS#8-format.\n");
-  printf("                    Use with --file-pin, --slot, --label, --id and --pin.\n");
-  printf("  --export <path>   Export a key pair to the given path.\n");
-  printf("                    The file will be written in PKCS#8-format.\n");
-  printf("                    Cannot be used in combination with --module,\n");
-  printf("                    since the keys are extracted from the SoftHSM database,\n");
-  printf("                    thus not using PKCS#11.\n");
-  printf("                    Use with --file-pin (will encrypt file), --slot, --id\n");
-  printf("                    and --pin.\n");
-  printf("  --optimize        Clean up leftovers (session objects in the database) from\n");
-  printf("                    applications that haven't closed down properly.\n");
-  printf("                    Cannot be used in combination with --module.\n");
-  printf("                    Use with --slot and --pin.\n");
-  printf("                    WARNING: Make sure that no application is currently\n");
-  printf("                    using SoftHSM and session objects.\n");
-  printf("  --trusted <bool>  Mark the object as trusted. true or false.\n");
-  printf("                    Use with --slot, --so-pin, --type, and (--id or --label).\n");
-  printf("  --file-pin <PIN>  Supply a PIN if the file is encrypted.\n");
-  printf("  --force           Override some warnings.\n");
-  printf("  -h                Shows this help screen.\n");
-  printf("  --help            Shows this help screen.\n");
-  printf("  --id <hex>        Defines the ID of the object. Hexadecimal characters.\n");
-  printf("                    Use with --force if multiple key pairs may share\n");
-  printf("                    the same ID.\n");
-  printf("  --label <text>    Defines the label of the object or the token.\n");
-  printf("  --module <path>   Use another PKCS#11 library than SoftHSM.\n");
-  printf("  --pin <PIN>       The PIN for the normal user.\n");
-  printf("  --slot <number>   The slot where the token is located.\n");
-  printf("  --so-pin <PIN>    The PIN for the Security Officer (SO).\n");
-  printf("  --type <text>     The type of object. CKO_PUBLIC_KEY or CKO_CERTIFICATE.\n");
-  printf("  -v                Show version info.\n");
-  printf("  --version         Show version info.\n");
-  printf("  --gencrt          Generate a keypair and signed certificate in SHSM.\n");
-  printf("  --host            Hostname for SHSM.\n");
-  printf("  --port            Port number for SHSM connection.\n");
-  printf("  --size            Bitsize of the keypair generated on the SHSM, by default 2048.\n");
-  printf("  --keyalg          Algorithm for a key par generated on SHSM. RSA by default.\n");
-  printf("  --dn              Distinguished name for generating a certificate on the SHSM.\n");
-  printf("  --csrfile         Where CSR file should be stored, if applicable.\n");
-  printf("  --crtchain        File where to write certificate chain.\n");
-  printf("  --crtfile         File where to write certificate generated on SHSM.\n");
-  printf("  --import-crt      File with PEM-encoded certificate for import.\n");
+  printf("  --show-slots        Display all the available slots.\n");
+  printf("  --init-token        Initialize the token at a given slot.\n");
+  printf("                      Use with --slot, --label, --so-pin, and --pin.\n");
+  printf("                      WARNING: Any content in token token will be erased.\n");
+  printf("  --import <path>     Import a key pair from the given path.\n");
+  printf("                      The file must be in PKCS#8-format.\n");
+  printf("                      Use with --file-pin, --slot, --label, --id and --pin.\n");
+  printf("  --export <path>     Export a key pair to the given path.\n");
+  printf("                      The file will be written in PKCS#8-format.\n");
+  printf("                      Cannot be used in combination with --module,\n");
+  printf("                      since the keys are extracted from the SoftHSM database,\n");
+  printf("                      thus not using PKCS#11.\n");
+  printf("                      Use with --file-pin (will encrypt file), --slot, --id\n");
+  printf("                      and --pin.\n");
+  printf("  --optimize          Clean up leftovers (session objects in the database) from\n");
+  printf("                      applications that haven't closed down properly.\n");
+  printf("                      Cannot be used in combination with --module.\n");
+  printf("                      Use with --slot and --pin.\n");
+  printf("                      WARNING: Make sure that no application is currently\n");
+  printf("                      using SoftHSM and session objects.\n");
+  printf("  --trusted <bool>    Mark the object as trusted. true or false.\n");
+  printf("                      Use with --slot, --so-pin, --type, and (--id or --label).\n");
+  printf("  --file-pin <PIN>    Supply a PIN if the file is encrypted.\n");
+  printf("  --force             Override some warnings.\n");
+  printf("  -h                  Shows this help screen.\n");
+  printf("  --help              Shows this help screen.\n");
+  printf("  --id <hex>          Defines the ID of the object. Hexadecimal characters.\n");
+  printf("                      Use with --force if multiple key pairs may share\n");
+  printf("                      the same ID.\n");
+  printf("  --label <text>      Defines the label of the object or the token.\n");
+  printf("  --module <path>     Use another PKCS#11 library than SoftHSM.\n");
+  printf("  --pin <PIN>         The PIN for the normal user.\n");
+  printf("  --slot <number>     The slot where the token is located.\n");
+  printf("  --so-pin <PIN>      The PIN for the Security Officer (SO).\n");
+  printf("  --type <text>       The type of object. CKO_PUBLIC_KEY or CKO_CERTIFICATE.\n");
+  printf("  -v                  Show version info.\n");
+  printf("  --version           Show version info.\n");
+  printf("  --getshsmkey <k>    Queries SHSM public key, saves it to a given file.\n");
+  printf("  --gencrt            Generate a keypair and signed certificate in SHSM.\n");
+  printf("  --host <host>       Hostname for SHSM.\n");
+  printf("  --port <port>       Port number for SHSM connection.\n");
+  printf("  --size <keysize>    Bitsize of the keypair generated on the SHSM, by default 2048.\n");
+  printf("  --keyalg <alg>      Algorithm for a key par generated on SHSM. RSA by default.\n");
+  printf("  --dn <dn>           Distinguished name for generating a certificate on the SHSM.\n");
+  printf("  --csrfile <file>    Where CSR file should be stored, if applicable.\n");
+  printf("  --crtchain <file>   File where to write certificate chain.\n");
+  printf("  --crtfile <file>    File where to write certificate generated on SHSM.\n");
+  printf("  --import-crt <file> File with PEM-encoded certificate for import.\n");
   printf("\n");
   printf("\n");
   printf("You also need to have a configuration file to specify path to the\n");
@@ -156,6 +157,7 @@ enum {
   OPT_HELP,
   OPT_VERSION,
   OPT_GENCRT,
+  OPT_GETSHSMKEY,
   OPT_HOST,
   OPT_PORT,
   OPT_SIZE,
@@ -186,6 +188,7 @@ static const struct option long_options[] = {
   { "help",            0, NULL, OPT_HELP },
   { "version",         0, NULL, OPT_VERSION },
   { "gencrt",          0, NULL, OPT_GENCRT },
+  { "getshsmkey",      1, NULL, OPT_GETSHSMKEY },
   { "host",            1, NULL, OPT_HOST },
   { "port",            1, NULL, OPT_PORT },
   { "size",            1, NULL, OPT_SIZE },
@@ -250,6 +253,7 @@ int main(int argc, char *argv[]) {
   int doCsrExport = 0;
   int doOptimize = 0;
   int doTrusted = 0;
+  int doGetPubKey = 0;
   int action = 0;
   int status = 0;
 
@@ -358,6 +362,11 @@ int main(int argc, char *argv[]) {
         action++;
         inPath = optarg;
         break;
+      case OPT_GETSHSMKEY:
+        doGetPubKey = 1;
+        action++;
+        crtPath = optarg;
+        break;
       default:
         usage();
         return 1;
@@ -447,12 +456,17 @@ int main(int argc, char *argv[]) {
     status = certGenShsm(filePIN, slot, userPIN, hostname, port, bitsize, algname, dn, label, objectID, crtPath, crtChainPath);
   }
 
+  if (doGetPubKey){
+    status = getShsmPubKey(hostname, port, crtPath);
+  }
+
   // Certificate import to the PKCS#11.
   if (doCrtImport){
     fprintf(stderr, "Error: Certificate import is not implemented yet.\n");
     status = 1;
   }
 
+  // Generates keyPair in SHSM and returns CSR.
   if (doCsrExport){
     fprintf(stderr, "Error: KeyPair and CSR generation is not implemented yet.\n");
     status = 1;
@@ -711,6 +725,67 @@ int showSlots() {
   return 0;
 }
 
+// Downloads SHSM public key and saves it to the local file.
+
+int getShsmPubKey(char *hostname, int port, char *crtPath){
+  if (hostname == NULL){
+    fprintf(stderr, "Error: Hostname cannot be null for SHSM operation. Use --host hostname\n");
+    return 1;
+  }
+
+  //
+  // Do the request, process response.
+  //
+  int requestStatus = 0;
+  std::string jsonRequest = ShsmApiUtils::getRequestShsmPubKey(ShsmApiUtils::generateNonce(16));
+  fprintf(stderr, "Request: %s\n", jsonRequest.c_str());
+
+  std::string jsonResponse = ShsmApiUtils::request(hostname, port, jsonRequest, &requestStatus);
+  if (requestStatus < 0){
+    fprintf(stderr, "Error: Request was not successfull, error code: %d. RequestBody: %s\n", requestStatus, jsonRequest.c_str());
+    return 1;
+  }
+
+  // Parse response, extract result, return it.
+  Json::Value root;   // 'root' will contain the root value after parsing.
+  Json::Reader reader;
+  bool parsedSuccess = reader.parse(jsonResponse, root, false);
+  if(!parsedSuccess) {
+    fprintf(stderr, "Could not read data from socket, response: %s\n", jsonResponse.c_str());
+    return 1;
+  }
+
+  // Check status code.
+  int resStatus = ShsmApiUtils::getStatus(root);
+  if (resStatus != 9000){
+    fprintf(stderr, "Result code is not 9000, cannot decrypt. Code: %d\n", resStatus);
+    return 1;
+  }
+
+  // Write certificate to a given file.
+  std::string crt = root["result"].asString();
+  ssize_t crtLen = ShsmApiUtils::getJsonByteArraySize(crt);
+  if (crtLen <= 0){
+    fprintf(stderr, "Certificate length is invalid: %ld.\n", (long) crtLen);
+    return 1;
+  }
+
+  Botan::byte * crtByteArray = (Botan::byte *) malloc(sizeof(Botan::byte) * crtLen);
+  if (crtByteArray == NULL){
+    fprintf(stderr, "Unable to allocate memory for pubey.\n");
+    return 1;
+  }
+
+  int res = ShsmApiUtils::hexToBytes(crt, crtByteArray, (size_t) crtLen);
+  fprintf(stderr, "PublicKey size: %ld, res: %d \n", (long) crtLen, res);
+
+  std::ofstream crtFile(crtPath);
+  crtFile.write((char *) crtByteArray, crtLen);
+  crtFile.close();
+
+  return 0;
+}
+
 // CertGen in SHSM.
 
 int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int port, long bitsize, char *algname, char *dn,
@@ -793,7 +868,9 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
   // Do the request, process response.
   //
   int requestStatus = 0;
-  std::string jsonRequest = ShsmApiUtils::genRequestForCertGen(bitsize, algname, dn);
+  std::string jsonRequest = ShsmApiUtils::getRequestForCertGen(bitsize, algname, dn);
+  fprintf(stderr, "Request: %s\n", jsonRequest.c_str());
+
   std::string jsonResponse = ShsmApiUtils::request(hostname, port, jsonRequest, &requestStatus);
   if (requestStatus < 0){
     fprintf(stderr, "Error: Request was not successfull, error code: %d. RequestBody: %s\n", requestStatus, jsonRequest.c_str());
@@ -805,7 +882,7 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
   Json::Reader reader;
   bool parsedSuccess = reader.parse(jsonResponse, root, false);
   if(!parsedSuccess) {
-    fprintf(stderr, "Could not read data from socket, response: %s", jsonResponse.c_str());
+    fprintf(stderr, "Could not read data from socket, response: %s\n", jsonResponse.c_str());
     return 1;
   }
 

@@ -12,12 +12,10 @@
 #include <iomanip>
 #include <iostream>     // std::cout
 #include <sstream>      // std::ostringstream
-#include <botan/types.h>
+#include "ShsmApiUtils.h"
 #include <json.h>
-#include <src/common/ShsmApiUtils.h>
 #include <botan/block_cipher.h>
 #include <botan/symkey.h>
-#include <botan/sym_algo.h>
 #include <botan/b64_filt.h>
 #include <botan/engine.h>
 #include <botan/lookup.h>
@@ -39,19 +37,6 @@ SHSM_KEY_HANDLE ShsmUtils::getShsmKeyHandle(SoftDatabase *db, CK_OBJECT_HANDLE h
     }
 
     return shsmHandle;
-}
-
-std::string ShsmUtils::getRequestShsmPubKey(std::string nonce) {
-    // Generate JSON request here.
-    Json::Value jReq;
-    jReq["function"] = "GetSHSMPubKey";
-    jReq["version"] = "1.0";
-    jReq["nonce"] = nonce;
-
-    // Build string request body.
-    Json::FastWriter jWriter;
-    std::string json = jWriter.write(jReq) + "\n"; // EOL at the end of the request.
-    return json;
 }
 
 std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string key, const Botan::byte byte[], size_t t, std::string nonce) {
@@ -168,7 +153,7 @@ ssize_t ShsmUtils::removePkcs15Padding(const Botan::byte *buff, size_t len, Bota
     }
 
     // If data position is out of scope, return nothing.
-    if (dataPosStart < 0 || dataPosStart > len){
+    if (dataPosStart < 0 || (size_t)dataPosStart > len){
         ERROR_MSG("removePkcs15Padding", "Padding could not be parsed");
         *status = -4;
         return -4;

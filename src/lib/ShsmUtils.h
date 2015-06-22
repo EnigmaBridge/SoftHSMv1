@@ -6,7 +6,6 @@
 #define SOFTHSMV1_SHSMUTILS_H
 
 #include "ShsmApiUtils.h"
-#include "ShsmConnectionConfig.h"
 #include "ShsmPrivateKey.h"
 #include "SoftDatabase.h"
 #include <string>
@@ -22,11 +21,6 @@ public:
      * Returns true if given key is stored in SHSM.
      */
     static CK_BBOOL isShsmKey(SoftDatabase * db, CK_OBJECT_HANDLE hKey);
-
-    /**
-     * Returns request string for query for SHSM public key.
-     */
-    static std::string getRequestShsmPubKey(std::string nonce);
 
     /**
      * Returns request string for decryption query.
