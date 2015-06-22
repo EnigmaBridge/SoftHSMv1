@@ -76,7 +76,7 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     Botan::InitializationVector aesIv(iv, 16);
 
     // Encryption & Encode
-    Botan::Pipe pipe(Botan::get_cipher("AES-256/CBC/PKCS7", key, aesIv, Botan::ENCRYPTION));
+    Botan::Pipe pipe(Botan::get_cipher("AES-256/CBC/PKCS7", aesKey, aesIv, Botan::ENCRYPTION));
     pipe.process_msg(byte, t);
 
     // Read the output.
