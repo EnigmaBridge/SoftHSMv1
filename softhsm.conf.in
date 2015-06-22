@@ -4,14 +4,14 @@
 // store the information for each token.
 //
 {
-  slots: [
+  "slots": [
     // First slot configuration.
     {
-        slot: 0,
-        db: "@softhsmdbdir@/slot0.db",
-        host: "enigmabridge.plus.com",
-        port: 11111,
-        key: ""
+        "slot": 0,
+        "db": "@softhsmdbdir@/slot0.db",
+        "host": "enigmabridge.plus.com",
+        "port": 11111,
+        "key": ""
     }
   ]
 }
