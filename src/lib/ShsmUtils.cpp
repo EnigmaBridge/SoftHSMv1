@@ -14,6 +14,12 @@
 #include <sstream>
 #include <json.h>
 #include <src/common/ShsmApiUtils.h>
+#include <botan/block_cipher.h>
+#include <botan/symkey.h>
+#include <botan/sym_algo.h>
+#include <botan/b64_filt.h>
+#include <botan/engine.h>
+#include <botan/lookup.h>
 
 CK_BBOOL ShsmUtils::isShsmKey(SoftDatabase *db, CK_OBJECT_HANDLE hKey) {
     return db->getBooleanAttribute(hKey, CKA_SHSM_KEY, CK_FALSE);
@@ -55,14 +61,34 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     jReq["nonce"] = !nonce.empty() ? nonce : ShsmApiUtils::generateNonce(16);
     jReq["objectid"] = privKey->getKeyId();
 
-    const std::string dataPrefix = "Packet0_RSA2048_";
+    const std::string dataPrefix = "Packet0_RSA2048_0000";
     const std::stringstream dataBuilder;
     dataBuilder << dataPrefix;
 
-    // TODO: AES-256-CBC encrypt data for decryption.
+    // AES-256-CBC encrypt data for decryption.
+    // IV is null for now, TODO: force others to change this to AES-GCM with correct IV.
+    Botan::byte iv[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    Botan::byte encKey[32];
+    ShsmApiUtils::hexToBytes(key, encKey, 32);
+    Botan::SecureVector<Botan::byte> tSecVector(encKey, 32);
+
+    Botan::SymmetricKey aesKey(tSecVector);
+    Botan::InitializationVector aesIv(iv, 16);
+
+    // Encryption & Encode
+    Botan::Pipe pipe(Botan::get_cipher("AES-256/CBC/PKCS7", key, aesIv, Botan::ENCRYPTION));
+    pipe.process_msg(byte, t);
+
+    // Read the output.
+    Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * (t + 32));
+    if (buff == NULL_PTR){
+        return "";
+    }
+
+    size_t cipLen = pipe.read(buff, (t + 32));
 
     // Add hex-encoded input data here.
-    dataBuilder << ShsmApiUtils::bytesToHex(byte, t);
+    dataBuilder << ShsmApiUtils::bytesToHex(buff, cipLen);
 
     // Build string request body.
     Json::Writer jWriter;

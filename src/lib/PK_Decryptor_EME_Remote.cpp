@@ -80,6 +80,9 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * decHexLen / 2);
     ShsmApiUtils::hexToBytes(decrytpedHexCoded, buff, decHexLen / 2);
 
+    // TODO: remove PKCS#5 padding.
+    // ...
+
     // Allocate new secure vector and return it.
     return Botan::SecureVector<Botan::byte>(buff, decHexLen / 2);
 }
