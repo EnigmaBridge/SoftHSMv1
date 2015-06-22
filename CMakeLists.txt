@@ -6,7 +6,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 include_directories(.
 ../openssl-1.0.1i/include
 src/lib
-src/lib/json
+src/common
+src/json
 src/lib/cryptoki_compat/
 src/lib/cryptoki_compat/pkcs11.h
 /opt/local/include/botan-1.10)
@@ -58,4 +59,4 @@ set(SOURCE_FILES
     src/lib/util.h
     src/lib/jsoncpp.cpp)
 
-add_executable(SoftHSMv1 ${SOURCE_FILES} src/lib/PK_Decryptor_EME_Remote.cpp src/lib/PK_Decryptor_EME_Remote.h src/lib/ShsmConnectionConfig.cpp src/lib/ShsmConnectionConfig.h src/lib/ShsmPrivateKey.cpp src/lib/ShsmPrivateKey.h src/lib/ShsmUtils.cpp src/lib/ShsmUtils.h)
+add_executable(SoftHSMv1 ${SOURCE_FILES} src/lib/PK_Decryptor_EME_Remote.cpp src/lib/PK_Decryptor_EME_Remote.h src/lib/ShsmConnectionConfig.cpp src/lib/ShsmConnectionConfig.h src/lib/ShsmPrivateKey.cpp src/lib/ShsmPrivateKey.h src/lib/ShsmUtils.cpp src/lib/ShsmUtils.h src/common/ShsmApiUtils.cpp src/common/ShsmApiUtils.h)
