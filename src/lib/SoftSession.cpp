@@ -148,7 +148,7 @@ Botan::Public_Key* SoftSession::getKey(CK_OBJECT_HANDLE hKey) {
       // Clone the key
       const CK_OBJECT_CLASS objClass = this->db->getObjectClass(hKey);
       // Is the private key stored in the SHSM?
-      bool isShsm = this->db->getBooleanAttribute(hKey, CKA_SHSM_KEY, CK_FALSE);
+      bool isShsm = ShsmUtils::isShsmKey(this->db, hKey);
       if(objClass == CKO_PRIVATE_KEY && !isShsm) {
         Botan::BigInt bigN = this->db->getBigIntAttribute(hKey, CKA_MODULUS);
         Botan::BigInt bigE = this->db->getBigIntAttribute(hKey, CKA_PUBLIC_EXPONENT);

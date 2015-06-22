@@ -46,6 +46,7 @@
 #include "MutexFactory.h"
 #include "attribute.h"
 #include "PK_Decryptor_EME_Remote.h"
+#include "ShsmUtils.h"
 
 // Standard includes
 #include <stdio.h>
@@ -1106,8 +1107,7 @@ CK_RV C_DecryptInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_
     session->pkDecryptor = new Botan::PK_Decryptor_MR_with_EME(*decryptKey, &*eme);
 #else
     session->decryptSize = (cryptoKey->max_input_bits() + 8) / 8;
-    session->db->getBooleanAttribute(hKey, )
-    if (objClass == CKO_PRIVATE_KEY_SHSM){
+    if (ShsmUtils::isShsmKey(session->db, hKey)){
       session->pkDecryptor = new PK_Decryptor_EME_Remote(dynamic_cast<ShsmPrivateKey*>(cryptoKey), eme, session->currentSlot);
     } else {
       session->pkDecryptor = new Botan::PK_Decryptor_EME(*dynamic_cast<Botan::Private_Key*>(cryptoKey), eme);

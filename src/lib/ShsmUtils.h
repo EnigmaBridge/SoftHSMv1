@@ -44,6 +44,11 @@ public:
     static SHSM_KEY_HANDLE getShsmKeyHandle(SoftDatabase * db, CK_OBJECT_HANDLE hKey);
 
     /**
+     * Returns true if given key is stored in SHSM.
+     */
+    static CK_BBOOL isShsmKey(SoftDatabase * db, CK_OBJECT_HANDLE hKey);
+
+    /**
      * Returns request string for query for SHSM public key.
      */
     static std::string getRequestShsmPubKey(std::string nonce);

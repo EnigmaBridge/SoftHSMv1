@@ -122,6 +122,10 @@ int ShsmUtils::hexToBytes(std::string input, char *buff, size_t maxLen) {
     return (int)(len / 2);
 }
 
+CK_BBOOL ShsmUtils::isShsmKey(SoftDatabase *db, CK_OBJECT_HANDLE hKey) {
+    return db->getBooleanAttribute(hKey, CKA_SHSM_KEY, CK_FALSE);
+}
+
 SHSM_KEY_HANDLE ShsmUtils::getShsmKeyHandle(SoftDatabase *db, CK_OBJECT_HANDLE hKey) {
     SHSM_KEY_HANDLE shsmHandle;
 
