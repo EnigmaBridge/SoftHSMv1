@@ -5,7 +5,7 @@
 #ifndef SOFTHSMV1_SHSMUTILS_H
 #define SOFTHSMV1_SHSMUTILS_H
 
-
+#include "ShsmApiUtils.h"
 #include "ShsmConnectionConfig.h"
 #include "ShsmPrivateKey.h"
 #include "SoftDatabase.h"

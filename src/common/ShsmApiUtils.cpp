@@ -207,3 +207,26 @@ std::string ShsmApiUtils::generateNonce(size_t len) {
 
     return res.str();
 }
+
+std::string ShsmApiUtils::genRequestForCertGen(const char *hostname, int port, long bitsize, const char *alg, const char *dn) {
+    // Generate JSON request here.
+    Json::Value jReq;
+    jReq["function"] = "CreateUserObject";
+    jReq["version"] = "1.0";
+    jReq["nonce"] = ShsmApiUtils::generateNonce(16);
+    jReq["type"] = 6;
+
+    Json::Value jData;
+    jData["dn"] = dn;
+    jData["size"] = bitsize;
+    jData["algorithm"] = alg;
+
+    // Add data for cert gen.
+    jReq["data"] = jData;
+
+    // Build string request body.
+    Json::Writer jWriter;
+    std::string json = jWriter.write(jReq) + "\n"; // EOL at the end of the request.
+    return json;
+}
+

@@ -47,6 +47,7 @@
 #include "attribute.h"
 #include "PK_Decryptor_EME_Remote.h"
 #include "ShsmUtils.h"
+#include "ShsmApiUtils.h"
 
 // Standard includes
 #include <stdio.h>

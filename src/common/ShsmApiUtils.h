@@ -5,8 +5,18 @@
 #ifndef SOFTHSMV1_SHSMAPIUTILS_H
 #define SOFTHSMV1_SHSMAPIUTILS_H
 
+#include <botan/types.h>
 
-#include "ShsmConnectionConfig.h"
+// Boolean attribute for private keys, if set to true, the private key is stored in SHSM.
+#define CKA_SHSM_KEY (CKA_VENDOR_DEFINED + 0x100)
+// Integer attribute, stores private key handle for SHSM stored private key.
+#define CKA_SHSM_KEY_HANDLE (CKA_VENDOR_DEFINED + 0x101)
+// RSA private key type stored in SHSM.
+#define CKO_PRIVATE_KEY_SHSM (CKO_VENDOR_DEFINED + CKO_PRIVATE_KEY)
+
+// Type of the SHSM_KEY_HANDLE.
+#define SHSM_KEY_HANDLE long
+#define SHSM_INVALID_KEY_HANDLE -1
 
 class ShsmApiUtils {
 
@@ -51,6 +61,11 @@ public:
      * Generates random nonce string.
      */
     static std::string generateNonce(size_t len);
+
+    /**
+     * Generates JSON request for certificate generation.
+     */
+    static std::string genRequestForCertGen(const char * hostname, int port, long bitsize, const char *alg, const char *dn);
 };
 
 
