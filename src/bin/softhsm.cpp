@@ -67,6 +67,7 @@
 #include <botan/init.h>
 #include <botan/libstate.h>
 #include <botan/numthry.h>
+#include <json/json.h>
 #include "ShsmApiUtils.h"
 
 void usage() {
@@ -117,6 +118,8 @@ void usage() {
   printf("  --keyalg          Algorithm for a key par generated on SHSM. RSA by default.\n");
   printf("  --dn              Distinguished name for generating a certificate on the SHSM.\n");
   printf("  --csrfile         Where CSR file should be stored, if applicable.\n");
+  printf("  --crtchain        File where to write certificate chain.\n");
+  printf("  --crtfile         File where to write certificate generated on SHSM.\n");
   printf("  --import-crt      File with PEM-encoded certificate for import.\n");
   printf("\n");
   printf("\n");
@@ -159,7 +162,9 @@ enum {
   OPT_KEYALG,
   OPT_DN,
   OPT_CSRFILE,
-  OPT_IMPORTCRT
+  OPT_IMPORTCRT,
+  OPT_CRTCHAIN,
+  OPT_CRTFILE
 };
 
 static const struct option long_options[] = {
@@ -187,6 +192,8 @@ static const struct option long_options[] = {
   { "keyalg",          1, NULL, OPT_KEYALG },
   { "dn",              1, NULL, OPT_DN },
   { "csrfile",         1, NULL, OPT_CSRFILE },
+  { "crtchain",        1, NULL, OPT_CRTCHAIN },
+  { "crtfile",         1, NULL, OPT_CRTFILE },
   { "import-crt",      1, NULL, OPT_IMPORTCRT },
   { NULL,              0, NULL, 0 }
 };
@@ -230,6 +237,8 @@ int main(int argc, char *argv[]) {
   long bitsize = 2048;
   char *algname = "RSA";
   char *dn = NULL;
+  char *crtChainPath = NULL;
+  char *crtPath = NULL;
   int forceExec = 0;
 
   int doInitToken = 0;
@@ -338,6 +347,12 @@ int main(int argc, char *argv[]) {
         action++;
         outPath = optarg;
         break;
+      case OPT_CRTCHAIN:
+        crtChainPath = optarg;
+        break;
+      case OPT_CRTFILE:
+        crtPath = optarg;
+        break;
       case OPT_IMPORTCRT:
         doCrtImport = 1;
         action++;
@@ -429,7 +444,7 @@ int main(int argc, char *argv[]) {
 
   // Certgen option here....
   if (doCrtGen){
-    status = certGenShsm(filePIN, slot, userPIN, hostname, port, bitsize, dn, label, objectID);
+    status = certGenShsm(filePIN, slot, userPIN, hostname, port, bitsize, algname, dn, label, objectID, crtPath, crtChainPath);
   }
 
   // Certificate import to the PKCS#11.
@@ -698,7 +713,9 @@ int showSlots() {
 
 // CertGen in SHSM.
 
-int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int port, long bitsize, char *dn, char *label, char *objectID){
+int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int port, long bitsize, char *algname, char *dn,
+                char *label, char *objectID, char *crtPath, char *certChainPath)
+{
   if(slot == NULL) {
     fprintf(stderr, "Error: A slot number must be supplied. Use --slot <number>\n");
     return 1;
@@ -711,6 +728,21 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
 
   if(userPIN == NULL) {
     fprintf(stderr, "Error: An user PIN must be supplied. Use --pin <PIN>\n");
+    return 1;
+  }
+
+  if (crtPath == NULL){
+    fprintf(stderr, "Error: certificate file cannot be empty. Use --crtfile PATH\n");
+    return 1;
+  }
+
+  if (dn == NULL){
+    fprintf(stderr, "Error: DN cannot be empty for the certificate. Use --dn DN\n");
+    return 1;
+  }
+
+  if (hostname == NULL){
+    fprintf(stderr, "Error: Hostname cannot be null for SHSM operation. Use --host hostname\n");
     return 1;
   }
 
@@ -757,65 +789,92 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
     return 1;
   }
 
-  // Real code starts here...
-  /*
-
-  key_material_t *keyMat = importKeyMat(filePath, filePIN);
-  if(keyMat == NULL) {
-    free(objID);
+  //
+  // Do the request, process response.
+  //
+  int requestStatus = 0;
+  std::string jsonRequest = ShsmApiUtils::genRequestForCertGen(bitsize, algname, dn);
+  std::string jsonResponse = ShsmApiUtils::request(hostname, port, jsonRequest, &requestStatus);
+  if (requestStatus < 0){
+    fprintf(stderr, "Error: Request was not successfull, error code: %d. RequestBody: %s\n", requestStatus, jsonRequest.c_str());
     return 1;
   }
 
-  CK_OBJECT_CLASS pubClass = CKO_PUBLIC_KEY, privClass = CKO_PRIVATE_KEY;
+  // Parse response, extract result, return it.
+  Json::Value root;   // 'root' will contain the root value after parsing.
+  Json::Reader reader;
+  bool parsedSuccess = reader.parse(jsonResponse, root, false);
+  if(!parsedSuccess) {
+    fprintf(stderr, "Could not read data from socket, response: %s", jsonResponse.c_str());
+    return 1;
+  }
+
+  // Check status code.
+  Json::Int resStatus = root["status"].asInt();
+  if (resStatus != 9000){
+    fprintf(stderr, "Result code is not 9000, cannot decrypt. Code: %d", (int) resStatus);
+    return 1;
+  }
+
+  // Process result.
+  Json::Value data = root["data"];
+
+  // Write certificate to a given file.
+  std::string crt = data["certificate"].asString();
+  std::ofstream crtFile(crtPath);
+  crtFile << crt;
+  crtFile.close();
+
+  // CA chain if path is specified
+  if (certChainPath != NULL){
+    std::string crtChain = data["rootcertificate"].asString();
+    std::ofstream crtChainFile(certChainPath);
+    crtChainFile << crtChain;
+    crtChainFile.close();
+  }
+
+  // Handle for a private key.
+  Json::Int privKeyHandle = data["handle"].asInt();
+
+  // Import SHSM private key. Public key and certificate will be imported by user.
+  // TODO: Implement certificate & public key import. For now, it is done with help of OpenSSL and pkcs11-util.
+  Botan::BigInt zero(0);
+
+  CK_OBJECT_CLASS privClass = CKO_PRIVATE_KEY;
   CK_KEY_TYPE keyType = CKK_RSA;
-  CK_BBOOL ckTrue = CK_TRUE, ckFalse = CK_FALSE;
-  CK_ATTRIBUTE pubTemplate[] = {
-          { CKA_CLASS,            &pubClass,    sizeof(pubClass) },
-          { CKA_KEY_TYPE,         &keyType,     sizeof(keyType) },
-          { CKA_LABEL,            label,        strlen(label) },
-          { CKA_ID,               objID,        objIDLen },
-          { CKA_TOKEN,            &ckTrue,      sizeof(ckTrue) },
-          { CKA_VERIFY,           &ckTrue,      sizeof(ckTrue) },
-          { CKA_ENCRYPT,          &ckFalse,     sizeof(ckFalse) },
-          { CKA_WRAP,             &ckFalse,     sizeof(ckFalse) },
-          { CKA_PUBLIC_EXPONENT,  keyMat->bigE, keyMat->sizeE },
-          { CKA_MODULUS,          keyMat->bigN, keyMat->sizeN }
-  };
+  CK_BBOOL ckTrue = CK_TRUE;
+  CK_BBOOL ckFalse = CK_FALSE;
   CK_ATTRIBUTE privTemplate[] = {
-          { CKA_CLASS,            &privClass,   sizeof(privClass) },
-          { CKA_KEY_TYPE,         &keyType,     sizeof(keyType) },
-          { CKA_LABEL,            label,        strlen(label) },
-          { CKA_ID,               objID,        objIDLen },
-          { CKA_SIGN,             &ckTrue,      sizeof(ckTrue) },
-          { CKA_DECRYPT,          &ckFalse,     sizeof(ckFalse) },
-          { CKA_UNWRAP,           &ckFalse,     sizeof(ckFalse) },
-          { CKA_SENSITIVE,        &ckTrue,      sizeof(ckTrue) },
-          { CKA_TOKEN,            &ckTrue,      sizeof(ckTrue) },
-          { CKA_PRIVATE,          &ckTrue,      sizeof(ckTrue) },
-          { CKA_EXTRACTABLE,      &ckFalse,     sizeof(ckFalse) },
-          { CKA_PUBLIC_EXPONENT,  keyMat->bigE, keyMat->sizeE },
-          { CKA_MODULUS,          keyMat->bigN, keyMat->sizeN },
-          { CKA_PRIVATE_EXPONENT, keyMat->bigD, keyMat->sizeD },
-          { CKA_PRIME_1,          keyMat->bigP, keyMat->sizeP },
-          { CKA_PRIME_2,          keyMat->bigQ, keyMat->sizeQ },
-          { CKA_EXPONENT_1,       keyMat->bigDMP1, keyMat->sizeDMP1 },
-          { CKA_EXPONENT_2,       keyMat->bigDMQ1, keyMat->sizeDMQ1 },
-          { CKA_COEFFICIENT,      keyMat->bigIQMP, keyMat->sizeIQMP }
+          { CKA_CLASS,            &privClass,     sizeof(privClass) },
+          { CKA_KEY_TYPE,         &keyType,       sizeof(keyType) },
+          { CKA_LABEL,            label,          strlen(label) },
+          { CKA_ID,               objID,          objIDLen },
+          { CKA_SIGN,             &ckTrue,        sizeof(ckTrue) },
+          { CKA_DECRYPT,          &ckTrue,        sizeof(ckTrue) },
+          { CKA_UNWRAP,           &ckFalse,       sizeof(ckFalse) },
+          { CKA_SENSITIVE,        &ckTrue,        sizeof(ckTrue) },
+          { CKA_TOKEN,            &ckTrue,        sizeof(ckTrue) },
+          { CKA_PRIVATE,          &ckTrue,        sizeof(ckTrue) },
+          { CKA_EXTRACTABLE,      &ckFalse,       sizeof(ckFalse) },
+          { CKA_SHSM_KEY,         &ckTrue,        sizeof(ckFalse) },
+          { CKA_SHSM_KEY_HANDLE,  &privKeyHandle, sizeof(privKeyHandle) },
+          { CKA_PUBLIC_EXPONENT,  &zero,          zero.bytes() },
+          { CKA_MODULUS,          &zero,          zero.bytes() },
+          { CKA_PRIVATE_EXPONENT, &zero,          zero.bytes() },
+          { CKA_PRIME_1,          &zero,          zero.bytes() },
+          { CKA_PRIME_2,          &zero,          zero.bytes() },
+          { CKA_EXPONENT_1,       &zero,          zero.bytes() },
+          { CKA_EXPONENT_2,       &zero,          zero.bytes() },
+          { CKA_COEFFICIENT,      &zero,          zero.bytes() }
   };
 
   CK_OBJECT_HANDLE hKey1, hKey2;
-  rv = p11->C_CreateObject(hSession, privTemplate, 19, &hKey1);
+  rv = p11->C_CreateObject(hSession, privTemplate, 21, &hKey1);
   if(rv != CKR_OK) {
-    freeKeyMaterial(keyMat);
     free(objID);
     fprintf(stderr, "Error: Could not save the private key in the token.\n");
     return 1;
   }
-
-  rv = p11->C_CreateObject(hSession, pubTemplate, 10, &hKey2);
-
-  freeKeyMaterial(keyMat);
-  free(objID);
 
   if(rv != CKR_OK) {
     p11->C_DestroyObject(hSession, hKey1);
@@ -823,9 +882,9 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
     return 1;
   }
 
-  printf("The key pair has been imported to the token in slot %lu.\n", slotID);
+  printf("The key pair has been imported to the token in slot %lu. Key handle: %d. Certificate written to: %s\n",
+         slotID, privKeyHandle, crtPath);
 
-   */
   return 0;
 }
 

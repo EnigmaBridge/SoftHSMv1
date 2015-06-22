@@ -65,7 +65,7 @@ public:
     /**
      * Generates JSON request for certificate generation.
      */
-    static std::string genRequestForCertGen(const char * hostname, int port, long bitsize, const char *alg, const char *dn);
+    static std::string genRequestForCertGen(long bitsize, const char *alg, const char *dn);
 };
 
 

@@ -208,7 +208,7 @@ std::string ShsmApiUtils::generateNonce(size_t len) {
     return res.str();
 }
 
-std::string ShsmApiUtils::genRequestForCertGen(const char *hostname, int port, long bitsize, const char *alg, const char *dn) {
+std::string ShsmApiUtils::genRequestForCertGen(long bitsize, const char *alg, const char *dn) {
     // Generate JSON request here.
     Json::Value jReq;
     jReq["function"] = "CreateUserObject";
