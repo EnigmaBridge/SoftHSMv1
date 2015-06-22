@@ -8,6 +8,7 @@
 #include <iomanip>
 #include "PK_Decryptor_EME_Remote.h"
 #include "ShsmUtils.h"
+#include "ShsmApiUtils.h"
 
 
 PK_Decryptor_EME_Remote::PK_Decryptor_EME_Remote(const ShsmPrivateKey * key,
@@ -25,80 +26,66 @@ PK_Decryptor_EME_Remote::PK_Decryptor_EME_Remote(const ShsmPrivateKey * key,
     this->privKey = key;
     this->connectionConfig = new ShsmConnectionConfig(host, port);
     this->connectionConfig->setKey(ckey);
-
-    // TODO: load public key if not present here.
-
 }
 
-int PK_Decryptor_EME_Remote::decryptCall(const Botan::byte byte[], size_t t) {
+Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Botan::byte byte[], size_t t, int * status) const {
     // Generate JSON request for decryption.
-    std::string json = ShsmUtils::getRequestDecrypt(this->privKey, byte, t, "nonce");
+    Botan::SecureVector errRet = Botan::SecureVector<Botan::byte>(0);
+    std::string json = ShsmUtils::getRequestDecrypt(this->privKey, this->connectionConfig->getKey(), byte, t, "");
 
-    // Connect to a remote SHSM socket.
-    int sockfd = ShsmUtils::connectSocket(this->connectionConfig);
-    if (sockfd < 0){
-        DEBUG_MSG("decryptCall", "Socket could not be opened");
-        return -1;
+    // Perform the request.
+    int reqResult = 0;
+    std::string response = ShsmApiUtils::request(this->connectionConfig->getMHost().c_str(),
+                                                 this->connectionConfig->getMPort(),
+                                                 json, &reqResult);
+    if (!reqResult){
+        return errRet;
     }
 
-    // Send request over the socket.
-    int res = ShsmUtils::writeToSocket(sockfd, json);
-    if (res < 0){
-        DEBUG_MSG("decryptCall", "Socket could not be used for writing");
-        return -2;
-    }
-
-    // Read JSON response from HSMS.
-    std::string response = ShsmUtils::readStringFromSocket(sockfd);
-
-    // Closing opened socket. Refactor for performance.
-    close(sockfd);
-
-    // TODO: parse response, extract result, return it.
+    // Parse response, extract result, return it.
     Json::Value root;   // 'root' will contain the root value after parsing.
     Json::Reader reader;
     bool parsedSuccess = reader.parse(response, root, false);
     if(!parsedSuccess) {
         DEBUG_MSG("decryptCall", "Could not read data from socket");
-        return 1;
+        return errRet;
     }
 
-    // Let's extract the array contained
-    // in the root object
-    const Json::Value array = root["array"];
-
-    // Iterate over sequence elements and
-    // print its values
-    for(unsigned int index=0; index<array.size(); ++index)
-    {
-        cout<<"Element "
-        <<index
-        <<" in array: "
-        <<array[index].asString()
-        <<endl;
+    // Check status code.
+    if (root["status"].asInt() != 9000){
+        DEBUG_MSG("decryptCall", "Result code is not 9000, cannot decrypt");
+        return errRet;
     }
 
-    // Lets extract the not array element
-    // contained in the root object and
-    // print its value
-    const Json::Value notAnArray = root["not an array"];
-
-    if(not notAnArray.isNull())
-    {
-        cout<<"Not an array: "
-        <<notAnArray.asString()
-        <<endl;
+    // Process result.
+    std::string resultString = root["result"].asString();
+    if (resultString.empty() || resultString.length() < 4){
+        DEBUG_MSG("decryptCall", "Response string is too short.");
+        return errRet;
     }
 
-    // If we want to print JSON is as easy as doing:
-    cout<<"Json Example pretty print: "
-    <<endl<<root.toStyledString()
-    <<endl;
+    // Read prefix, first 4 bytes. unsigned long?
+    unsigned long prefix = (unsigned long) ShsmApiUtils::hexdigitToInt(resultString[3]);
+    prefix |= ((unsigned long) ShsmApiUtils::hexdigitToInt(resultString[2])) << 8;
+    prefix |= ((unsigned long) ShsmApiUtils::hexdigitToInt(resultString[1])) << 16;
+    prefix |= ((unsigned long) ShsmApiUtils::hexdigitToInt(resultString[0])) << 24;
 
-    return 0;
+    // Strip suffix of the key beginning with "Packet"
+    size_t pos = resultString.rfind("Packet", std::string::npos);
+    std::string decrytpedHexCoded = resultString.substr(4 + prefix,
+                                                        pos == std::string::npos ? resultString.length() - 4 : pos - 4 - prefix);
+
+    // Allocate memory buffer for decrypted block, convert from hexa string coding to bytes
+    const size_t decHexLen = decrytpedHexCoded.length();
+    Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * decHexLen / 2);
+    ShsmApiUtils::hexToBytes(decrytpedHexCoded, buff, decHexLen / 2);
+
+    // Allocate new secure vector and return it.
+    return Botan::SecureVector<Botan::byte>(buff, decHexLen / 2);
 }
 
 Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::dec(const Botan::byte byte[], size_t t) const {
-    // TODO: implement this decryption stuff...
-    return Botan::SecureVector<Botan::byte>(0);
+    int status = 0;
+    Botan::SecureVector<Botan::byte> ret = this->decryptCall(byte, t, &status);
+    return ret;
 }

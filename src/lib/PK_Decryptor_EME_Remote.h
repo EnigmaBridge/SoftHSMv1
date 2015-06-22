@@ -89,7 +89,7 @@ private:
     /**
      * Main method for submitting JSON request for decryption.
      */
-    int decryptCall(const Botan::byte byte[], size_t t);
+    Botan::SecureVector<Botan::byte> decryptCall(const Botan::byte byte[], size_t t, int * status) const;
 
 };
 
