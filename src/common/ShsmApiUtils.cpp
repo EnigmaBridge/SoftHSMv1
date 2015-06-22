@@ -7,10 +7,11 @@
 #include <iomanip>
 #include "ShsmApiUtils.h"
 
-#include "log.h"
 #include <netinet/in.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <stdexcept>
+#include <strings.h>
 #include <iomanip>
 #include <string>
 #include <iomanip>
@@ -24,14 +25,14 @@ int ShsmApiUtils::connectSocket(const char * hostname, int port) {
     struct hostent *server;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
-        DEBUG_MSG("decryptCall", "ERROR in opening socket");
+        //ERROR_MSG("decryptCall", "ERROR in opening socket");
         return -1;
     }
 
     server = gethostbyname(hostname);
     if (server == NULL) {
-        fprintf(stderr,"ERROR, no such host\n");
-        exit(0);
+        //ERROR_MSG("decryptCall", "ERROR, no such host");
+        return -2;
     }
 
     bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -43,8 +44,8 @@ int ShsmApiUtils::connectSocket(const char * hostname, int port) {
 
     serv_addr.sin_port = htons(port);
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){
-        DEBUG_MSG("decryptCall", "ERROR connecting");
-        return -2;
+        //ERROR_MSG("decryptCall", "ERROR connecting");
+        return -3;
     }
 
     return sockfd;
@@ -62,7 +63,7 @@ int ShsmApiUtils::writeToSocket(int sockfd, std::string buffToWrite) {
     while(writtenTotal != clen) {
         written = write(sockfd, cstr + writtenTotal, clen - writtenTotal);
         if (written < 0){
-            DEBUG_MSG("writeToSocket", "ERROR in writing to a socket");
+            //DEBUG_MSG("writeToSocket", "ERROR in writing to a socket");
             return -1;
         }
 
@@ -89,7 +90,7 @@ std::string ShsmApiUtils::request(const char *hostname, int port, std::string re
     // Connect to a remote SHSM socket.
     int sockfd = ShsmApiUtils::connectSocket(hostname, port);
     if (sockfd < 0){
-        DEBUG_MSG("decryptCall", "Socket could not be opened");
+        //DEBUG_MSG("decryptCall", "Socket could not be opened");
         *status = -1;
         return "";
     }
@@ -97,7 +98,7 @@ std::string ShsmApiUtils::request(const char *hostname, int port, std::string re
     // Send request over the socket.
     int res = ShsmApiUtils::writeToSocket(sockfd, request);
     if (res < 0){
-        DEBUG_MSG("decryptCall", "Socket could not be used for writing");
+        //DEBUG_MSG("decryptCall", "Socket could not be used for writing");
         *status = -2;
         return "";
     }
@@ -112,7 +113,7 @@ std::string ShsmApiUtils::request(const char *hostname, int port, std::string re
     return response;
 }
 
-std::string ShsmApiUtils::bytesToHex(const Botan::byte byte[], size_t len) {
+std::string ShsmApiUtils::bytesToHex(const Botan::byte * byte, size_t len) {
     std::ostringstream ret;
     for (std::string::size_type i = 0; i < len; ++i) {
         ret << std::hex << std::setfill('0') << std::setw(2) << std::nouppercase << (int) byte[i];
@@ -201,7 +202,7 @@ std::string ShsmApiUtils::generateNonce(size_t len) {
     static const char * alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
 
     std::stringstream res;
-    for(int i = 0; i < len; i++){
+    for(size_t i = 0; i < len; i++){
         res << alphabet[rand() % (sizeof(alphabet) - 1)];
     }
 
@@ -218,14 +219,14 @@ std::string ShsmApiUtils::genRequestForCertGen(long bitsize, const char *alg, co
 
     Json::Value jData;
     jData["dn"] = dn;
-    jData["size"] = bitsize;
+    jData["size"] = (int) bitsize;
     jData["algorithm"] = alg;
 
     // Add data for cert gen.
     jReq["data"] = jData;
 
     // Build string request body.
-    Json::Writer jWriter;
+    Json::FastWriter jWriter;
     std::string json = jWriter.write(jReq) + "\n"; // EOL at the end of the request.
     return json;
 }

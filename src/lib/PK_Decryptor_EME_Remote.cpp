@@ -11,7 +11,7 @@
 #include "ShsmApiUtils.h"
 
 
-PK_Decryptor_EME_Remote::PK_Decryptor_EME_Remote(const ShsmPrivateKey * key,
+PK_Decryptor_EME_Remote::PK_Decryptor_EME_Remote(ShsmPrivateKey * key,
                                                  const std::string &eme,
                                                  const SoftSlot *curSlot) : PK_Decryptor_EME(*key, eme)
 {
@@ -31,7 +31,7 @@ PK_Decryptor_EME_Remote::PK_Decryptor_EME_Remote(const ShsmPrivateKey * key,
 
 Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Botan::byte byte[], size_t t, int * status) const {
     // Generate JSON request for decryption.
-    Botan::SecureVector errRet = Botan::SecureVector<Botan::byte>(0);
+    Botan::SecureVector<Botan::byte> errRet = Botan::SecureVector<Botan::byte>(0);
     std::string json = ShsmUtils::getRequestDecrypt(this->privKey, this->connectionConfig->getKey(), byte, t, "");
 
     // Perform the request.

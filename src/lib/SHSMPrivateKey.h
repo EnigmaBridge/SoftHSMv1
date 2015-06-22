@@ -5,7 +5,7 @@
 #ifndef SOFTHSMV1_PK_HSMPRIVATEKEY_H
 #define SOFTHSMV1_PK_HSMPRIVATEKEY_H
 #include <botan/rsa.h>
-#include "attribute.h"
+#include "ShsmApiUtils.h"
 
 class ShsmPrivateKey : public Botan::RSA_PrivateKey {
 
@@ -21,7 +21,7 @@ public:
 
     ShsmPrivateKey(Botan::RandomNumberGenerator &rng, const Botan::BigInt &p, const Botan::BigInt &q,
                    const Botan::BigInt &e, const Botan::BigInt &d, const Botan::BigInt &n, SHSM_KEY_HANDLE shsmHandle) :
-            RSA_PrivateKey(rng, p, q, e, d, n), setKeyId(shsmHandle) { }
+            RSA_PrivateKey(rng, p, q, e, d, n), keyId(shsmHandle) { }
 
     ShsmPrivateKey(const Botan::AlgorithmIdentifier &alg_id, const Botan::MemoryRegion<Botan::byte> &key_bits,
                    Botan::RandomNumberGenerator &rng) : RSA_PrivateKey(alg_id, key_bits, rng) { }

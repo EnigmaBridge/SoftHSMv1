@@ -6,6 +6,7 @@
 #define SOFTHSMV1_SHSMAPIUTILS_H
 
 #include <botan/types.h>
+#include <string>
 
 // Boolean attribute for private keys, if set to true, the private key is stored in SHSM.
 #define CKA_SHSM_KEY (CKA_VENDOR_DEFINED + 0x100)
@@ -45,7 +46,7 @@ public:
     /**
      * Converts byte array to hexencoded string.
      */
-    static std::string bytesToHex(const Botan::byte byte[], size_t len);
+    static std::string bytesToHex(const Botan::byte * byte, size_t len);
 
     /**
      * Converts hex encoded byte buffer in string to byte buffer.

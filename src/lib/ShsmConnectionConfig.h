@@ -10,9 +10,9 @@
 
 class ShsmConnectionConfig {
 protected:
-    const static int         SHSM_PORT_DEFAULT = 11111;
-    const static std::string SHSM_HOST_DEFAULT = "localhost";
-    const static int         REQUEST_TIMEOUT_DEFAULT = 8000;
+    const static int         SHSM_PORT_DEFAULT;
+    const static std::string SHSM_HOST_DEFAULT;
+    const static int         REQUEST_TIMEOUT_DEFAULT;
 
     std::string  mHost = SHSM_HOST_DEFAULT;
     int          mPort = SHSM_PORT_DEFAULT;

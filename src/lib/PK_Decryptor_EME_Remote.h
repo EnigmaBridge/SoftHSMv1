@@ -70,17 +70,16 @@ protected:
     std::string eme;
 
 public:
-    PK_Decryptor_EME_Remote(const ShsmPrivateKey * key, const std::string &eme,
+    PK_Decryptor_EME_Remote(ShsmPrivateKey * key, const std::string &eme,
                             const SoftSlot * curSlot);
 
     const ShsmConnectionConfig * getConnectionConfig() const {
         return connectionConfig;
     }
 
-    void setConnectionConfig(const ShsmConnectionConfig * connectionConfig) {
+    void setConnectionConfig(ShsmConnectionConfig * connectionConfig) {
         PK_Decryptor_EME_Remote::connectionConfig = connectionConfig;
     }
-
 
 private:
     virtual Botan::SecureVector<Botan::byte> dec(const Botan::byte byte[], size_t t) const;

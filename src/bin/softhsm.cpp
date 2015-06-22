@@ -975,7 +975,7 @@ int importKeyPair(char *filePath, char *filePIN, char *slot, char *userPIN, char
     { CKA_LABEL,            label,        strlen(label) },
     { CKA_ID,               objID,        objIDLen },
     { CKA_SIGN,             &ckTrue,      sizeof(ckTrue) },
-    { CKA_DECRYPT,          &ckFalse,     sizeof(ckFalse) },
+    { CKA_DECRYPT,          &ckTrue,      sizeof(ckTrue) },
     { CKA_UNWRAP,           &ckFalse,     sizeof(ckFalse) },
     { CKA_SENSITIVE,        &ckTrue,      sizeof(ckTrue) },
     { CKA_TOKEN,            &ckTrue,      sizeof(ckTrue) },

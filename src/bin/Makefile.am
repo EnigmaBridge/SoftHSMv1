@@ -1,6 +1,9 @@
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
 
 AM_CPPFLAGS = 		-I$(srcdir)/../lib/cryptoki_compat \
+			-I$(srcdir)/../common \
+			-I$(srcdir)/../json \
+			-I$(srcdir)/.. \
 			@BOTAN_INCLUDES@ \
 			@SQLITE3_INCLUDES@
 
@@ -9,7 +12,12 @@ man_MANS =		softhsm.1
 
 bin_PROGRAMS =		softhsm softhsm-keyconv
 
-softhsm_SOURCES =	softhsm.cpp softhsm.h cryptoki.h
+softhsm_SOURCES =	softhsm.cpp softhsm.h cryptoki.h \
+					../json/json.h \
+					../json/jsoncpp.cpp \
+					../common/ShsmApiUtils.h \
+					../common/ShsmApiUtils.cpp
+
 softhsm_LDADD =		@BOTAN_LIBS@ @SQLITE3_LIBS@ @YIELD_LIB@
 
 softhsm_keyconv_SOURCES =	softhsm-keyconv.cpp softhsm-keyconv.h \

@@ -10,8 +10,9 @@
 #include <iomanip>
 #include <string>
 #include <iomanip>
+#include <iostream>     // std::cout
+#include <sstream>      // std::ostringstream
 #include <botan/types.h>
-#include <sstream>
 #include <json.h>
 #include <src/common/ShsmApiUtils.h>
 #include <botan/block_cipher.h>
@@ -29,7 +30,7 @@ SHSM_KEY_HANDLE ShsmUtils::getShsmKeyHandle(SoftDatabase *db, CK_OBJECT_HANDLE h
     SHSM_KEY_HANDLE shsmHandle;
 
     // Load this attribute via generic DB access call.
-    const CK_ATTRIBUTE attr = {CKA_SHSM_KEY_HANDLE, (void *) &shsmHandle, sizeof(SHSM_KEY_HANDLE)};
+    CK_ATTRIBUTE attr = {CKA_SHSM_KEY_HANDLE, (void *) &shsmHandle, sizeof(SHSM_KEY_HANDLE)};
     CK_RV shsmRet = db->getAttribute(hKey, &attr);
 
     if (shsmRet != CKR_OK){
@@ -48,7 +49,7 @@ std::string ShsmUtils::getRequestShsmPubKey(std::string nonce) {
     jReq["nonce"] = nonce;
 
     // Build string request body.
-    Json::Writer jWriter;
+    Json::FastWriter jWriter;
     std::string json = jWriter.write(jReq) + "\n"; // EOL at the end of the request.
     return json;
 }
@@ -59,11 +60,10 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     jReq["function"] = "ProcessData";
     jReq["version"] = "1.0";
     jReq["nonce"] = !nonce.empty() ? nonce : ShsmApiUtils::generateNonce(16);
-    jReq["objectid"] = privKey->getKeyId();
+    jReq["objectid"] = (Json::Int64) privKey->getKeyId();
 
-    const std::string dataPrefix = "Packet0_RSA2048_0000";
-    const std::stringstream dataBuilder;
-    dataBuilder << dataPrefix;
+    std::ostringstream dataBuilder;
+    dataBuilder.str("Packet0_RSA2048_0000");
 
     // AES-256-CBC encrypt data for decryption.
     // IV is null for now, TODO: force others to change this to AES-GCM with correct IV.
@@ -92,7 +92,7 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     dataBuilder << ShsmApiUtils::bytesToHex(buff, cipLen);
 
     // Build string request body.
-    Json::Writer jWriter;
+    Json::FastWriter jWriter;
     std::string json = jWriter.write(jReq) + "\n"; // EOL at the end of the request.
     return json;
 }

@@ -1,6 +1,9 @@
 MAINTAINERCLEANFILES =		$(srcdir)/Makefile.in
 
 AM_CPPFLAGS =			-I$(srcdir)/cryptoki_compat \
+			-I$(srcdir)/../common \
+			-I$(srcdir)/../json \
+			-I$(srcdir)/.. \
 				@BOTAN_INCLUDES@ \
 				@SQLITE3_INCLUDES@
 
@@ -23,7 +26,20 @@ libsofthsm_la_SOURCES =		main.cpp main.h \
 				SoftKeyStore.cpp SoftKeyStore.h \
 				util.h \
 				cryptoki.h \
-				cryptoki_compat/pkcs11.h
+				cryptoki_compat/pkcs11.h \
+				../json/json.h \
+				../json/jsoncpp.cpp \
+				../common/ShsmApiUtils.h \
+				../common/ShsmApiUtils.cpp \
+				PK_Decryptor_EME_Remote.h \
+				PK_Decryptor_EME_Remote.cpp \
+				ShsmConnectionConfig.h \
+				ShsmConnectionConfig.cpp \
+				ShsmPrivateKey.h \
+				ShsmPrivateKey.cpp \
+				ShsmUtils.h \
+				ShsmUtils.cpp
+
 libsofthsm_la_LIBADD =		@BOTAN_LIBS@ @SQLITE3_LIBS@ @YIELD_LIB@
 libsofthsm_la_LDFLAGS =		-version-info @VERSION_INFO@ \
 				-avoid-version -module -no-undefined
