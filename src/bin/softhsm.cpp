@@ -67,6 +67,7 @@
 #include <botan/init.h>
 #include <botan/libstate.h>
 #include <botan/numthry.h>
+#include "ShsmApiUtils.h"
 
 void usage() {
   printf("Support tool for libsofthsm\n");
@@ -109,6 +110,14 @@ void usage() {
   printf("  --type <text>     The type of object. CKO_PUBLIC_KEY or CKO_CERTIFICATE.\n");
   printf("  -v                Show version info.\n");
   printf("  --version         Show version info.\n");
+  printf("  --gencrt          Generate a keypair and signed certificate in SHSM.\n");
+  printf("  --host            Hostname for SHSM.\n");
+  printf("  --port            Port number for SHSM connection.\n");
+  printf("  --size            Bitsize of the keypair generated on the SHSM, by default 2048.\n");
+  printf("  --keyalg          Algorithm for a key par generated on SHSM. RSA by default.\n");
+  printf("  --dn              Distinguished name for generating a certificate on the SHSM.\n");
+  printf("  --csrfile         Where CSR file should be stored, if applicable.\n");
+  printf("  --import-crt      File with PEM-encoded certificate for import.\n");
   printf("\n");
   printf("\n");
   printf("You also need to have a configuration file to specify path to the\n");
@@ -142,7 +151,15 @@ enum {
   OPT_FILE_PIN,
   OPT_FORCE,
   OPT_HELP,
-  OPT_VERSION
+  OPT_VERSION,
+  OPT_GENCRT,
+  OPT_HOST,
+  OPT_PORT,
+  OPT_SIZE,
+  OPT_KEYALG,
+  OPT_DN,
+  OPT_CSRFILE,
+  OPT_IMPORTCRT
 };
 
 static const struct option long_options[] = {
@@ -163,6 +180,14 @@ static const struct option long_options[] = {
   { "force",           0, NULL, OPT_FORCE },
   { "help",            0, NULL, OPT_HELP },
   { "version",         0, NULL, OPT_VERSION },
+  { "gencrt",          0, NULL, OPT_GENCRT },
+  { "host",            1, NULL, OPT_HOST },
+  { "port",            1, NULL, OPT_PORT },
+  { "size",            1, NULL, OPT_SIZE },
+  { "keyalg",          1, NULL, OPT_KEYALG },
+  { "dn",              1, NULL, OPT_DN },
+  { "csrfile",         1, NULL, OPT_CSRFILE },
+  { "import-crt",      1, NULL, OPT_IMPORTCRT },
   { NULL,              0, NULL, 0 }
 };
 
@@ -200,12 +225,20 @@ int main(int argc, char *argv[]) {
   char *module = NULL;
   char *objectID = NULL;
   char *slot = NULL;
+  char *hostname = NULL;
+  int port = 11112;
+  long bitsize = 2048;
+  char *algname = "RSA";
+  char *dn = NULL;
   int forceExec = 0;
 
   int doInitToken = 0;
   int doShowSlots = 0;
   int doImport = 0;
+  int doCrtGen = 0;
+  int doCrtImport = 0;
   int doExport = 0;
+  int doCsrExport = 0;
   int doOptimize = 0;
   int doTrusted = 0;
   int action = 0;
@@ -280,6 +313,35 @@ int main(int argc, char *argv[]) {
       case 'h':
         usage();
         return 0;
+        break;
+      case OPT_GENCRT:
+        doCrtGen = 1;
+        action++;
+        break;
+      case OPT_HOST:
+        hostname = optarg;
+        break;
+      case OPT_PORT:
+        port = atoi(optarg);
+        break;
+      case OPT_SIZE:
+        bitsize = atoi(optarg);
+        break;
+      case OPT_KEYALG:
+        algname = optarg;
+        break;
+      case OPT_DN:
+        dn = optarg;
+        break;
+      case OPT_CSRFILE:
+        doCsrExport = 1;
+        action++;
+        outPath = optarg;
+        break;
+      case OPT_IMPORTCRT:
+        doCrtImport = 1;
+        action++;
+        inPath = optarg;
         break;
       default:
         usage();
@@ -363,6 +425,22 @@ int main(int argc, char *argv[]) {
   // Set CKA_TRUSTED
   if(doTrusted) {
     status = trustObject(boolTrusted, slot, soPIN, type, label, objectID);
+  }
+
+  // Certgen option here....
+  if (doCrtGen){
+    status = certGenShsm(filePIN, slot, userPIN, hostname, port, bitsize, dn, label, objectID);
+  }
+
+  // Certificate import to the PKCS#11.
+  if (doCrtImport){
+    fprintf(stderr, "Error: Certificate import is not implemented yet.\n");
+    status = 1;
+  }
+
+  if (doCsrExport){
+    fprintf(stderr, "Error: KeyPair and CSR generation is not implemented yet.\n");
+    status = 1;
   }
 
   if(was_initialized == false) {
@@ -615,6 +693,139 @@ int showSlots() {
 
   free(pSlotList);
 
+  return 0;
+}
+
+// CertGen in SHSM.
+
+int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int port, long bitsize, char *dn, char *label, char *objectID){
+  if(slot == NULL) {
+    fprintf(stderr, "Error: A slot number must be supplied. Use --slot <number>\n");
+    return 1;
+  }
+
+  if(label == NULL) {
+    fprintf(stderr, "Error: A label for the object must be supplied. Use --label <text>\n");
+    return 1;
+  }
+
+  if(userPIN == NULL) {
+    fprintf(stderr, "Error: An user PIN must be supplied. Use --pin <PIN>\n");
+    return 1;
+  }
+
+  // TODO: support also ID with NULL, then it will be generated from RSA modulus as NSS does.
+  if(objectID == NULL) {
+    fprintf(stderr, "Error: An ID for the object must be supplied. Use --id <hex>\n");
+    return 1;
+  }
+  size_t objIDLen = 0;
+  char *objID = hexStrToBin(objectID, strlen(objectID), &objIDLen);
+  if(objID == NULL) {
+    fprintf(stderr, "Please edit --id <hex> to correct error.\n");
+    return 1;
+  }
+
+  CK_SLOT_ID slotID = atoi(slot);
+  CK_SESSION_HANDLE hSession;
+  CK_RV rv = p11->C_OpenSession(slotID, CKF_SERIAL_SESSION | CKF_RW_SESSION, NULL_PTR, NULL_PTR, &hSession);
+  if(rv != CKR_OK) {
+    if(rv == CKR_SLOT_ID_INVALID) {
+      fprintf(stderr, "Error: The given slot does not exist.\n");
+    } else {
+      fprintf(stderr, "Error: Could not open a session on the given slot.\n");
+    }
+    free(objID);
+    return 1;
+  }
+
+  rv = p11->C_Login(hSession, CKU_USER, (CK_UTF8CHAR_PTR)userPIN, strlen(userPIN));
+  if(rv != CKR_OK) {
+    if(rv == CKR_PIN_INCORRECT) {
+      fprintf(stderr, "Error: The given user PIN does not match the one in the token.\n");
+    } else {
+      fprintf(stderr, "Error: Could not log in on the token.\n");
+    }
+    free(objID);
+    return 1;
+  }
+
+  CK_OBJECT_HANDLE oHandle = searchObject(hSession, CKO_PRIVATE_KEY, NULL, objID, objIDLen);
+  if(oHandle != CK_INVALID_HANDLE) {
+    free(objID);
+    fprintf(stderr, "Error: The ID is already assigned to another object. Use --force to override this message.\n");
+    return 1;
+  }
+
+  // Real code starts here...
+  /*
+
+  key_material_t *keyMat = importKeyMat(filePath, filePIN);
+  if(keyMat == NULL) {
+    free(objID);
+    return 1;
+  }
+
+  CK_OBJECT_CLASS pubClass = CKO_PUBLIC_KEY, privClass = CKO_PRIVATE_KEY;
+  CK_KEY_TYPE keyType = CKK_RSA;
+  CK_BBOOL ckTrue = CK_TRUE, ckFalse = CK_FALSE;
+  CK_ATTRIBUTE pubTemplate[] = {
+          { CKA_CLASS,            &pubClass,    sizeof(pubClass) },
+          { CKA_KEY_TYPE,         &keyType,     sizeof(keyType) },
+          { CKA_LABEL,            label,        strlen(label) },
+          { CKA_ID,               objID,        objIDLen },
+          { CKA_TOKEN,            &ckTrue,      sizeof(ckTrue) },
+          { CKA_VERIFY,           &ckTrue,      sizeof(ckTrue) },
+          { CKA_ENCRYPT,          &ckFalse,     sizeof(ckFalse) },
+          { CKA_WRAP,             &ckFalse,     sizeof(ckFalse) },
+          { CKA_PUBLIC_EXPONENT,  keyMat->bigE, keyMat->sizeE },
+          { CKA_MODULUS,          keyMat->bigN, keyMat->sizeN }
+  };
+  CK_ATTRIBUTE privTemplate[] = {
+          { CKA_CLASS,            &privClass,   sizeof(privClass) },
+          { CKA_KEY_TYPE,         &keyType,     sizeof(keyType) },
+          { CKA_LABEL,            label,        strlen(label) },
+          { CKA_ID,               objID,        objIDLen },
+          { CKA_SIGN,             &ckTrue,      sizeof(ckTrue) },
+          { CKA_DECRYPT,          &ckFalse,     sizeof(ckFalse) },
+          { CKA_UNWRAP,           &ckFalse,     sizeof(ckFalse) },
+          { CKA_SENSITIVE,        &ckTrue,      sizeof(ckTrue) },
+          { CKA_TOKEN,            &ckTrue,      sizeof(ckTrue) },
+          { CKA_PRIVATE,          &ckTrue,      sizeof(ckTrue) },
+          { CKA_EXTRACTABLE,      &ckFalse,     sizeof(ckFalse) },
+          { CKA_PUBLIC_EXPONENT,  keyMat->bigE, keyMat->sizeE },
+          { CKA_MODULUS,          keyMat->bigN, keyMat->sizeN },
+          { CKA_PRIVATE_EXPONENT, keyMat->bigD, keyMat->sizeD },
+          { CKA_PRIME_1,          keyMat->bigP, keyMat->sizeP },
+          { CKA_PRIME_2,          keyMat->bigQ, keyMat->sizeQ },
+          { CKA_EXPONENT_1,       keyMat->bigDMP1, keyMat->sizeDMP1 },
+          { CKA_EXPONENT_2,       keyMat->bigDMQ1, keyMat->sizeDMQ1 },
+          { CKA_COEFFICIENT,      keyMat->bigIQMP, keyMat->sizeIQMP }
+  };
+
+  CK_OBJECT_HANDLE hKey1, hKey2;
+  rv = p11->C_CreateObject(hSession, privTemplate, 19, &hKey1);
+  if(rv != CKR_OK) {
+    freeKeyMaterial(keyMat);
+    free(objID);
+    fprintf(stderr, "Error: Could not save the private key in the token.\n");
+    return 1;
+  }
+
+  rv = p11->C_CreateObject(hSession, pubTemplate, 10, &hKey2);
+
+  freeKeyMaterial(keyMat);
+  free(objID);
+
+  if(rv != CKR_OK) {
+    p11->C_DestroyObject(hSession, hKey1);
+    fprintf(stderr, "Error: Could not save the public key in the token.\n");
+    return 1;
+  }
+
+  printf("The key pair has been imported to the token in slot %lu.\n", slotID);
+
+   */
   return 0;
 }
 
