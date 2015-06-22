@@ -45,7 +45,7 @@
 #include <botan/rsa.h>
 #include <pkcs11.h>
 #include "ShsmConnectionConfig.h"
-#include "PK_HSMPrivateKey.h"
+#include "ShsmPrivateKey.h"
 #include <json/json.h>
 #include <json/json-forwards.h>
 
@@ -62,14 +62,17 @@ protected:
     /**
      * Private key information. Key is stored in HSM, this object contains information to reach it via remote calls.
      */
-    PK_HSMPrivateKey * privKey = NULL;
+    ShsmPrivateKey * privKey = NULL;
 
 public:
-    PK_Decryptor_EME_Remote(const Botan::Private_Key &key, const std::string &eme,
+    PK_Decryptor_EME_Remote(const ShsmPrivateKey &key, const std::string &eme,
                             const ShsmConnectionConfig &connectionConfig) : PK_Decryptor_EME(key, eme),
                                                                             connectionConfig(&connectionConfig) { }
 
-    PK_Decryptor_EME_Remote(const Botan::Private_Key &key, const std::string &eme) : PK_Decryptor_EME(key, eme) { }
+    PK_Decryptor_EME_Remote(const ShsmPrivateKey * key, const std::string &eme,
+                            const SoftSlot * curSlot);
+
+    PK_Decryptor_EME_Remote(const ShsmPrivateKey &key, const std::string &eme) : PK_Decryptor_EME(key, eme) { }
 
     const ShsmConnectionConfig * getConnectionConfig() const {
         return connectionConfig;

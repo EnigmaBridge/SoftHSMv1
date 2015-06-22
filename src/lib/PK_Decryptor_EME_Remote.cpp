@@ -9,6 +9,27 @@
 #include "PK_Decryptor_EME_Remote.h"
 #include "ShsmUtils.h"
 
+
+PK_Decryptor_EME_Remote::PK_Decryptor_EME_Remote(const ShsmPrivateKey * key,
+                                                 const std::string &eme,
+                                                 const SoftSlot *curSlot) : PK_Decryptor_EME(*key, eme)
+{
+    std::string host = curSlot->getHost();
+    std::string ckey = curSlot->getKey();
+    int port = curSlot->getPort();
+
+    if (host.empty()){
+        return;
+    }
+
+    this->privKey = key;
+    this->connectionConfig = new ShsmConnectionConfig(host, port);
+    this->connectionConfig->setKey(ckey);
+
+    // TODO: load public key if not present here.
+
+}
+
 int PK_Decryptor_EME_Remote::decryptCall(const Botan::byte byte[], size_t t) {
     // Generate JSON request for decryption.
     std::string json = ShsmUtils::getRequestDecrypt(this->privKey, byte, t, "nonce");

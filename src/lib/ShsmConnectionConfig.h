@@ -18,6 +18,11 @@ protected:
     int          mPort = SHSM_PORT_DEFAULT;
     int          mTimeout = REQUEST_TIMEOUT_DEFAULT;
 
+    /**
+     * Encryption key used for communication with SHSM.
+     */
+    std::string key;
+
     //RSAPublicKey m_shsmPubKey = null;
 
     /**
@@ -55,6 +60,23 @@ public:
 
     void setMTimeout(int mTimeout) {
         ShsmConnectionConfig::mTimeout = mTimeout;
+    }
+
+
+    const std::string &getKey() const {
+        return key;
+    }
+
+    void setKey(const std::string &key) {
+        ShsmConnectionConfig::key = key;
+    }
+
+    Botan::RSA_PublicKey *getShsmPubKey() const {
+        return shsmPubKey;
+    }
+
+    void setShsmPubKey(Botan::RSA_PublicKey *shsmPubKey) {
+        ShsmConnectionConfig::shsmPubKey = shsmPubKey;
     }
 };
 

@@ -33,12 +33,15 @@
 
 #include "SoftSession.h"
 #include "util.h"
+#include "attribute.h"
 
 // Includes for the crypto library
 #include <botan/libstate.h>
 #include <botan/if_algo.h>
 #include <botan/rsa.h>
 #include <pkcs11.h>
+#include "ShsmPrivateKey.h"
+#include "ShsmUtils.h"
 
 SoftSession::SoftSession(CK_FLAGS rwSession, SoftSlot *givenSlot, char *appID) {
   pApplication = NULL_PTR;
@@ -139,9 +142,14 @@ Botan::Public_Key* SoftSession::getKey(CK_OBJECT_HANDLE hKey) {
 
   // If the key is not in the session cache
   if(tmpKey == NULL_PTR) {
-    if(this->db->getKeyType(hKey) == CKK_RSA) {
+    // Load key type.
+    const CK_KEY_TYPE keyType = this->db->getKeyType(hKey);
+    if(keyType == CKK_RSA) {
       // Clone the key
-      if(this->db->getObjectClass(hKey) == CKO_PRIVATE_KEY) {
+      const CK_OBJECT_CLASS objClass = this->db->getObjectClass(hKey);
+      // Is the private key stored in the SHSM?
+      bool isShsm = this->db->getBooleanAttribute(hKey, CKA_SHSM_KEY, CK_FALSE);
+      if(objClass == CKO_PRIVATE_KEY && !isShsm) {
         Botan::BigInt bigN = this->db->getBigIntAttribute(hKey, CKA_MODULUS);
         Botan::BigInt bigE = this->db->getBigIntAttribute(hKey, CKA_PUBLIC_EXPONENT);
         Botan::BigInt bigD = this->db->getBigIntAttribute(hKey, CKA_PRIVATE_EXPONENT);
@@ -158,7 +166,23 @@ Botan::Public_Key* SoftSession::getKey(CK_OBJECT_HANDLE hKey) {
         catch(...) {
           return NULL_PTR;
         }
-      } else {
+
+      } else if (objClass == CKO_PRIVATE_KEY && isShsm) {
+        // Load attributes related to SHSM RSA private key - SHSM key id.
+        SHSM_KEY_HANDLE shsmHandle = ShsmUtils::getShsmKeyHandle(this->db, hKey);
+        if (shsmHandle != SHSM_INVALID_KEY_HANDLE){
+          return NULL_PTR;
+        }
+
+        Botan::BigInt bigZero;
+        try {
+          tmpKey = new ShsmPrivateKey(*rng, bigZero, bigZero, bigZero, bigZero, bigZero, shsmHandle); // new Botan::RSA_PrivateKey(*rng, bigZero, bigZero, bigZero, bigZero, bigZero);
+        }
+        catch(...) {
+          return NULL_PTR;
+        }
+
+      } else if (objClass == CKO_PUBLIC_KEY) {
         Botan::BigInt bigN = this->db->getBigIntAttribute(hKey, CKA_MODULUS);
         Botan::BigInt bigE = this->db->getBigIntAttribute(hKey, CKA_PUBLIC_EXPONENT);
 
@@ -172,6 +196,10 @@ Botan::Public_Key* SoftSession::getKey(CK_OBJECT_HANDLE hKey) {
         catch(...) {
           return NULL_PTR;
         }
+
+      } else {
+        // ERROR.
+        return NULL_PTR;
       }
 
       // Create a new key store object.

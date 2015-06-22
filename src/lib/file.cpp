@@ -128,7 +128,6 @@ CK_RV readConfigFile() {
     const std::string slotDb = cslot[CFG_DB].asString();
 
     // Check if it is SHSM slot.
-    bool isShsm = false;
     std::string host = "";
     Json::Int port = -1;
     std::string key = "";
@@ -138,7 +137,6 @@ CK_RV readConfigFile() {
       host = cslot[CFG_HOST].asString();
       port = cslot[CFG_PORT].isNull() ? CFG_DEFAULT_PORT : cslot[CFG_PORT].asInt();
       key = cslot[CFG_KEY].isNull() ? "" : cslot[CFG_KEY].asString();
-      isShsm = true;
     }
 
     // Allocate char * buffer for slot database path.

@@ -32,6 +32,17 @@
 // Includes for the crypto library
 #include <botan/rng.h>
 
+// Boolean attribute for private keys, if set to true, the private key is stored in SHSM.
+#define CKA_SHSM_KEY (CKA_VENDOR_DEFINED + 0x100)
+// Integer attribute, stores private key handle for SHSM stored private key.
+#define CKA_SHSM_KEY_HANDLE (CKA_VENDOR_DEFINED + 0x101)
+// RSA private key type stored in SHSM.
+#define CKO_PRIVATE_KEY_SHSM (CKO_VENDOR_DEFINED + CKO_PRIVATE_KEY)
+
+// Type of the SHSM_KEY_HANDLE.
+#define SHSM_KEY_HANDLE long
+#define SHSM_INVALID_KEY_HANDLE -1
+
 CK_RV valAttributeCertificate(CK_STATE state, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount);
 CK_RV valAttributePubRSA(CK_STATE state, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount);
 CK_RV valAttributePrivRSA(CK_STATE state, Botan::RandomNumberGenerator *rng, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount);

@@ -1,9 +1,18 @@
-# SoftHSM configuration file
-#
-# Format:
-# <Slot ID>:<Path to the token database>
-#
-# The given paths are just an indication to SoftHSM on where it should 
-# store the information for each token.
+// SoftHSM configuration file
+//
+// The given paths are just an indication to SoftHSM on where it should
+// store the information for each token.
+//
+{
+  slots: [
+    // First slot configuration.
+    {
+        slot: 0,
+        db: "@softhsmdbdir@/slot0.db",
+        host: "enigmabridge.plus.com",
+        port: 11111,
+        key: ""
+    }
+  ]
+}
 
-0:@softhsmdbdir@/slot0.db

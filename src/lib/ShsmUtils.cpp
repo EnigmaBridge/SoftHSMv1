@@ -122,6 +122,20 @@ int ShsmUtils::hexToBytes(std::string input, char *buff, size_t maxLen) {
     return (int)(len / 2);
 }
 
+SHSM_KEY_HANDLE ShsmUtils::getShsmKeyHandle(SoftDatabase *db, CK_OBJECT_HANDLE hKey) {
+    SHSM_KEY_HANDLE shsmHandle;
+
+    // Load this attribute via generic DB access call.
+    const CK_ATTRIBUTE attr = {CKA_SHSM_KEY_HANDLE, (void *) &shsmHandle, sizeof(SHSM_KEY_HANDLE)};
+    CK_RV shsmRet = db->getAttribute(hKey, &attr);
+
+    if (shsmRet != CKR_OK){
+        return SHSM_INVALID_KEY_HANDLE;
+    }
+
+    return shsmHandle;
+}
+
 std::string ShsmUtils::getRequestShsmPubKey(std::string nonce) {
     // Generate JSON request here.
     Json::Value jReq;
@@ -136,7 +150,7 @@ std::string ShsmUtils::getRequestShsmPubKey(std::string nonce) {
     return json;
 }
 
-std::string ShsmUtils::getRequestDecrypt(PK_HSMPrivateKey *privKey, const Botan::byte byte[], size_t t, std::string nonce) {
+std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, const Botan::byte byte[], size_t t, std::string nonce) {
     // Generate JSON request here.
     Json::Value jReq;
     jReq["function"] = "ProcessData";
@@ -155,4 +169,6 @@ std::string ShsmUtils::getRequestDecrypt(PK_HSMPrivateKey *privKey, const Botan:
     std::string json = jWriter.write(jReq) + "\n"; // EOL at the end of the request.
     return json;
 }
+
+
 

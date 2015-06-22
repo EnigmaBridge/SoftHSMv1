@@ -7,7 +7,8 @@
 
 
 #include "ShsmConnectionConfig.h"
-#include "PK_HSMPrivateKey.h"
+#include "ShsmPrivateKey.h"
+#include "SoftDatabase.h"
 #include <string>
 
 class ShsmUtils {
@@ -38,6 +39,11 @@ public:
     static int hexToBytes(std::string input, char * buff, size_t maxLen);
 
     /**
+     * Loads SHSM key handle of the object referenced by hKey. Under this value the object is referenced on the SHSM.
+     */
+    static SHSM_KEY_HANDLE getShsmKeyHandle(SoftDatabase * db, CK_OBJECT_HANDLE hKey);
+
+    /**
      * Returns request string for query for SHSM public key.
      */
     static std::string getRequestShsmPubKey(std::string nonce);
@@ -45,7 +51,7 @@ public:
     /**
      * Returns request string for decryption query.
      */
-    static std::string getRequestDecrypt(PK_HSMPrivateKey * privKey, const Botan::byte byte[], size_t t, std::string nonce);
+    static std::string getRequestDecrypt(ShsmPrivateKey * privKey, const Botan::byte byte[], size_t t, std::string nonce);
 
 };
 

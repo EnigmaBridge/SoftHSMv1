@@ -44,6 +44,8 @@
 #include "mechanisms.h"
 #include "string.h"
 #include "MutexFactory.h"
+#include "attribute.h"
+#include "PK_Decryptor_EME_Remote.h"
 
 // Standard includes
 #include <stdio.h>
@@ -1028,6 +1030,10 @@ CK_RV C_DecryptInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_
     return CKR_OPERATION_ACTIVE;
   }
 
+  // Get key type and object class, it may be SHSM embedded key.
+  const CK_KEY_TYPE keyType = session->db->getKeyType(hKey);
+  const CK_OBJECT_CLASS objClass = session->db->getObjectClass(hKey);
+
   // Get the key from the session key store.
   Botan::Public_Key *cryptoKey = session->getKey(hKey);
   if(cryptoKey == NULL_PTR) {
@@ -1044,7 +1050,7 @@ CK_RV C_DecryptInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_
   }
 
   // Is it an RSA private key?
-  if(session->db->getObjectClass(hKey) != CKO_PRIVATE_KEY || session->db->getKeyType(hKey) != CKK_RSA) {
+  if(objClass != CKO_PRIVATE_KEY || keyType != CKK_RSA) {
     DEBUG_MSG("C_DecryptInit", "Only an RSA private key can be used");
     return CKR_KEY_TYPE_INCONSISTENT;
   }
@@ -1100,7 +1106,12 @@ CK_RV C_DecryptInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_
     session->pkDecryptor = new Botan::PK_Decryptor_MR_with_EME(*decryptKey, &*eme);
 #else
     session->decryptSize = (cryptoKey->max_input_bits() + 8) / 8;
-    session->pkDecryptor = new Botan::PK_Decryptor_EME(*dynamic_cast<Botan::Private_Key*>(cryptoKey), eme);
+    session->db->getBooleanAttribute(hKey, )
+    if (objClass == CKO_PRIVATE_KEY_SHSM){
+      session->pkDecryptor = new PK_Decryptor_EME_Remote(dynamic_cast<ShsmPrivateKey*>(cryptoKey), eme, session->currentSlot);
+    } else {
+      session->pkDecryptor = new Botan::PK_Decryptor_EME(*dynamic_cast<Botan::Private_Key*>(cryptoKey), eme);
+    }
 #endif
   }
   catch(std::exception& e) {
