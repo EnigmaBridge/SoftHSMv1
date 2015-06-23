@@ -49,7 +49,7 @@ ACX_PEDANTIC
 ACX_STRICT
 
 # Do not give warnings for long-long. So that we can build with newer SQLite3 
-CPPFLAGS="${CPPFLAGS} -Wno-long-long"
+CPPFLAGS="${CPPFLAGS} -Wno-long-long -std=c++0x"
 
 # Configure arguments
 AC_ARG_WITH(
