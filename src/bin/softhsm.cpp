@@ -928,7 +928,7 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
           { CKA_ID,               objID,          objIDLen },
           { CKA_SIGN,             &ckTrue,        sizeof(ckTrue) },
           { CKA_DECRYPT,          &ckTrue,        sizeof(ckTrue) },
-          { CKA_UNWRAP,           &ckFalse,       sizeof(ckFalse) },
+          { CKA_UNWRAP,           &ckTrue,        sizeof(ckTrue) },
           { CKA_SENSITIVE,        &ckTrue,        sizeof(ckTrue) },
           { CKA_TOKEN,            &ckTrue,        sizeof(ckTrue) },
           { CKA_PRIVATE,          &ckTrue,        sizeof(ckTrue) },
