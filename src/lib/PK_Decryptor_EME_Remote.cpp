@@ -59,7 +59,8 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     }
 
     // Process result.
-    std::string resultString = root["result"].asString();
+    std::string rawResult = root["result"].asString();
+    std::string resultString = ShsmApiUtils::removeWhiteSpace(rawResult);
     if (resultString.empty() || resultString.length() < 4){
         ERROR_MSG("decryptCall", "Response string is too short.");
         return errRet;
@@ -82,6 +83,9 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     ssize_t bufferLen = decHexLen / 2;
     Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * bufferLen);
     ShsmApiUtils::hexToBytes(decrytpedHexCoded, buff, bufferLen);
+
+    // TODO: AES-256-CBC-PKCS7 decrypt here...
+    // ...
 
     // Remove PKCS#1 1.5 padding.
     if (this->eme == "EME-PKCS1-v1_5"){

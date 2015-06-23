@@ -280,4 +280,34 @@ ssize_t ShsmApiUtils::getJsonByteArraySize(std::string &input) {
     return totalLen / 2;
 }
 
+std::string ShsmApiUtils::fixNewLinesInResponse(std::string &input) {
+    std::string copy = input;
 
+    const std::string s1 = "\\\\n";
+    const std::string t1 = "\n";
+
+    const std::string s2 = "\\n";
+    const std::string t2 = "\n";
+
+    // s1 -> t1
+    std::string::size_type n = 0;
+    while ( ( n = copy.find( s1, n ) ) != std::string::npos ) {
+        copy.replace( n, s1.size(), t1 );
+        n += t1.size();
+    }
+
+    // s2 -> t2
+    n=0;
+    while ( ( n = copy.find( s1, n ) ) != std::string::npos ) {
+        copy.replace( n, s1.size(), t1 );
+        n += t1.size();
+    }
+
+    return copy;
+}
+
+std::string ShsmApiUtils::removeWhiteSpace(std::string &input) {
+    std::string copy = input;
+    copy.erase(std::remove_if(copy.begin(), copy.end(), std::isspace), copy.end());
+    return copy;
+}

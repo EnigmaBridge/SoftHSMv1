@@ -899,14 +899,14 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
   // Write certificate to a given file.
   std::string crt = data["certificate"].asString();
   std::ofstream crtFile(crtPath);
-  crtFile << crt;
+  crtFile << ShsmApiUtils::fixNewLinesInResponse(crt);
   crtFile.close();
 
   // CA chain if path is specified
   if (certChainPath != NULL){
     std::string crtChain = data["rootcertificate"].asString();
     std::ofstream crtChainFile(certChainPath);
-    crtChainFile << crtChain;
+    crtChainFile << ShsmApiUtils::fixNewLinesInResponse(crtChain);
     crtChainFile.close();
   }
 

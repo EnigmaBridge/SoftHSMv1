@@ -83,6 +83,16 @@ public:
      * Computes size of the array needed to hold decoded hex-coded byte array.
      */
     static ssize_t getJsonByteArraySize(std::string &input);
+
+    /**
+     * Replaces "\\n" character with real new line. Used in certificate transport in PEM form.
+     */
+    static std::string fixNewLinesInResponse(std::string &input);
+
+    /**
+     * Removes " ", "\n", "\r", "\t".
+     */
+    static std::string removeWhiteSpace(std::string &input);
 };
 
 
