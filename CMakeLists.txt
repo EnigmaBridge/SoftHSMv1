@@ -5,6 +5,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 include_directories(.
 ../openssl-1.0.1i/include
+src/
 src/lib
 src/common
 src/json
