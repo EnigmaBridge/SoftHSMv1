@@ -315,9 +315,9 @@ std::string ShsmApiUtils::fixNewLinesInResponse(std::string &input) {
 
     // s2 -> t2
     n=0;
-    while ( ( n = copy.find( s1, n ) ) != std::string::npos ) {
-        copy.replace( n, s1.size(), t1 );
-        n += t1.size();
+    while ( ( n = copy.find( s2, n ) ) != std::string::npos ) {
+        copy.replace( n, s2.size(), t2 );
+        n += t2.size();
     }
 
     return copy;
