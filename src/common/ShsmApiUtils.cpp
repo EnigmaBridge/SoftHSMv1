@@ -221,7 +221,7 @@ std::string ShsmApiUtils::getRequestForCertGen(long bitsize, const char *alg, co
     jReq["function"] = "CreateUserObject";
     jReq["version"] = "1.0";
     jReq["nonce"] = ShsmApiUtils::generateNonce(16);
-    jReq["type"] = 6;
+    jReq["type"] = "6";
 
     Json::Value jData;
     jData["dn"] = dn;
@@ -229,7 +229,8 @@ std::string ShsmApiUtils::getRequestForCertGen(long bitsize, const char *alg, co
     jData["algorithm"] = alg;
 
     // Add data for cert gen.
-    jReq["data"] = jData;
+    //jReq["data"] = jData;
+    // Data fiels is not supported by now. TODO: fix.
 
     // Build string request body.
     Json::FastWriter jWriter;
@@ -250,21 +251,36 @@ std::string ShsmApiUtils::getRequestShsmPubKey(std::string nonce) {
     return json;
 }
 
-int ShsmApiUtils::getStatus(Json::Value &root) {
-    Json::Value status = root["status"];
-    if (status.isNull()){
+int ShsmApiUtils::getIntFromJsonField(Json::Value &root, int * success) {
+    if (root.isNull()){
+        if (success != NULL){
+            *success = -1;
+        }
         return -1;
     }
 
-    if (status.isIntegral()){
-        return status.asInt();
+    if (success != NULL){
+        *success = 0;
     }
 
-    if (status.isString()){
-        return atoi(status.asCString());
+    if (root.isIntegral()){
+        return root.asInt();
+    }
+
+    if (root.isString()){
+        return atoi(root.asCString());
+    }
+
+    if (success != NULL){
+        *success = -2;
     }
 
     return -2;
+}
+
+int ShsmApiUtils::getStatus(Json::Value &root) {
+    Json::Value status = root["status"];
+    return ShsmApiUtils::getIntFromJsonField(status, NULL);
 }
 
 ssize_t ShsmApiUtils::getJsonByteArraySize(std::string &input) {

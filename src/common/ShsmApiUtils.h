@@ -75,6 +75,11 @@ public:
     static std::string getRequestShsmPubKey(std::string nonce);
 
     /**
+     * Converts given field to integer. It may be string-encoded integer or integer.
+     */
+    static int getIntFromJsonField(Json::Value &root, int * success);
+
+    /**
      * Extracts status value as an integer from the JSON response.
      */
     static int getStatus(Json::Value &root);

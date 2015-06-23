@@ -911,7 +911,7 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
   }
 
   // Handle for a private key.
-  Json::Int privKeyHandle = data["handle"].asInt();
+  Json::Int privKeyHandle = ShsmApiUtils::getIntFromJsonField(data["handle"], NULL);
 
   // Import SHSM private key. Public key and certificate will be imported by user.
   // TODO: Implement certificate & public key import. For now, it is done with help of OpenSSL and pkcs11-util.
@@ -949,13 +949,7 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
   rv = p11->C_CreateObject(hSession, privTemplate, 21, &hKey1);
   if(rv != CKR_OK) {
     free(objID);
-    fprintf(stderr, "Error: Could not save the private key in the token.\n");
-    return 1;
-  }
-
-  if(rv != CKR_OK) {
-    p11->C_DestroyObject(hSession, hKey1);
-    fprintf(stderr, "Error: Could not save the public key in the token.\n");
+    fprintf(stderr, "Error: Could not save the private key in the token, rv=%d.\n", (int) rv);
     return 1;
   }
 
