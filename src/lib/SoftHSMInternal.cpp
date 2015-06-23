@@ -38,6 +38,7 @@
 #include "userhandling.h"
 #include "tokenhandling.h"
 #include "util.h"
+#include "ShsmApiUtils.h"
 
 // Standard includes
 #include <stdlib.h>
@@ -675,6 +676,7 @@ CK_RV SoftHSMInternal::createObject(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR
   CK_BBOOL isPrivate = CK_TRUE;
   CK_OBJECT_CLASS oClass = CKO_VENDOR_DEFINED;
   CK_KEY_TYPE keyType = CKK_VENDOR_DEFINED;
+  CK_BBOOL isShsm = CK_FALSE;
 
   // Extract object information
   for(CK_ULONG i = 0; i < ulCount; i++) {
@@ -699,6 +701,11 @@ CK_RV SoftHSMInternal::createObject(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR
           keyType = *(CK_KEY_TYPE*)pTemplate[i].pValue;
         }
         break;
+      case CKA_SHSM_KEY:
+        if (pTemplate[i].ulValueLen == sizeof(CK_BBOOL)){
+          isShsm = *(CK_BBOOL*)pTemplate[i].pValue;
+        }
+        break;
       default:
         break;
     }
@@ -715,13 +722,13 @@ CK_RV SoftHSMInternal::createObject(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR
   switch(oClass) {
     case CKO_CERTIFICATE:
         rv = valAttributeCertificate(session->getSessionState(), pTemplate, ulCount);
-        CHECK_DEBUG_RETURN(rv != CKR_OK, "C_CreateObject", "Problem with object template", rv);
+        CHECK_DEBUG_RETURN(rv != CKR_OK, "C_CreateObject", "Problem with object template - certificate", rv);
         oHandle = session->db->importPublicCert(pTemplate, ulCount);
     	break;
     case CKO_PUBLIC_KEY:
       if(keyType == CKK_RSA) {
         rv = valAttributePubRSA(session->getSessionState(), pTemplate, ulCount);
-        CHECK_DEBUG_RETURN(rv != CKR_OK, "C_CreateObject", "Problem with object template", rv);
+        CHECK_DEBUG_RETURN(rv != CKR_OK, "C_CreateObject", "Problem with object template - publicKey", rv);
         oHandle = session->db->importPublicKey(pTemplate, ulCount);
       } else {
         DEBUG_MSG("C_CreateObject", "The key type is not supported");
@@ -731,7 +738,11 @@ CK_RV SoftHSMInternal::createObject(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR
     case CKO_PRIVATE_KEY:
       if(keyType == CKK_RSA) {
         rv = valAttributePrivRSA(session->getSessionState(), session->rng, pTemplate, ulCount);
-        CHECK_DEBUG_RETURN(rv != CKR_OK, "C_CreateObject", "Problem with object template", rv);
+        if (isShsm && rv != CKR_OK) {
+          DEBUG_MSG("C_CreateObject", "Private key sanitization disabled for SHSM private key");
+        } else {
+          CHECK_DEBUG_RETURN(rv != CKR_OK, "C_CreateObject", "Problem with object template - privateKey", rv);
+        }
         oHandle = session->db->importPrivateKey(pTemplate, ulCount);
       } else {
         DEBUG_MSG("C_CreateObject", "The key type is not supported");

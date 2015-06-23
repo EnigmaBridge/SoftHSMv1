@@ -945,6 +945,8 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
           { CKA_COEFFICIENT,      &zero,          zero.bytes() }
   };
 
+  fprintf(stderr, "Going to import private key with handle: %d\n", privKeyHandle);
+
   CK_OBJECT_HANDLE hKey1, hKey2;
   rv = p11->C_CreateObject(hSession, privTemplate, 21, &hKey1);
   if(rv != CKR_OK) {
