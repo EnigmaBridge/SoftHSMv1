@@ -19,6 +19,7 @@
 #include <iomanip>
 #include <botan/types.h>
 #include <stdio.h>
+#include <algorithm>
 
 #define READ_STRING_BUFFER_SIZE 8192
 
@@ -308,6 +309,6 @@ std::string ShsmApiUtils::fixNewLinesInResponse(std::string &input) {
 
 std::string ShsmApiUtils::removeWhiteSpace(std::string &input) {
     std::string copy = input;
-    copy.erase(std::remove_if(copy.begin(), copy.end(), std::isspace), copy.end());
+    copy.erase(std::remove_if(copy.begin(), copy.end(), ::isspace), copy.end());
     return copy;
 }
