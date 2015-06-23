@@ -887,7 +887,7 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
   }
 
   // Check status code.
-  Json::Int resStatus = root["status"].asInt();
+  Json::Int resStatus = ShsmApiUtils::getStatus(root);
   if (resStatus != 9000){
     fprintf(stderr, "Result code is not 9000, cannot decrypt. Code: %d", (int) resStatus);
     return 1;

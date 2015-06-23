@@ -48,20 +48,20 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     Json::Reader reader;
     bool parsedSuccess = reader.parse(response, root, false);
     if(!parsedSuccess) {
-        DEBUG_MSG("decryptCall", "Could not read data from socket");
+        ERROR_MSG("decryptCall", "Could not read data from socket");
         return errRet;
     }
 
     // Check status code.
-    if (root["status"].asInt() != 9000){
-        DEBUG_MSG("decryptCall", "Result code is not 9000, cannot decrypt");
+    if (ShsmApiUtils::getStatus(root) != 9000){
+        ERROR_MSG("decryptCall", "Result code is not 9000, cannot decrypt");
         return errRet;
     }
 
     // Process result.
     std::string resultString = root["result"].asString();
     if (resultString.empty() || resultString.length() < 4){
-        DEBUG_MSG("decryptCall", "Response string is too short.");
+        ERROR_MSG("decryptCall", "Response string is too short.");
         return errRet;
     }
 
