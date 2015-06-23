@@ -52,12 +52,17 @@ public:
     /**
      * Converts hex encoded byte buffer in string to byte buffer.
      */
-    static int hexToBytes(std::string input, Botan::byte * buff, size_t maxLen);
+    static size_t hexToBytes(std::string input, Botan::byte * buff, size_t maxLen);
 
     /**
      * Returns integer representation of a digit.
      */
     static int hexdigitToInt(char ch);
+
+    /**
+     * Converts half-byte to a hex digit.
+     */
+    static char intToHexDigit(int c);
 
     /**
      * Generates random nonce string.
@@ -98,6 +103,17 @@ public:
      * Removes " ", "\n", "\r", "\t".
      */
     static std::string removeWhiteSpace(std::string &input);
+
+    /**
+     * Reads 4 bytes long representation, converts to unsigned long.
+     * Buff has to be at least 4 bytes long.
+     */
+    static unsigned long getLongFromString(const char * buff);
+
+    /**
+     * Writes long to the string on the given pointer. Has to have at least 4 B.
+     */
+    static void writeLongToString(unsigned long id, unsigned char * buff);
 };
 
 

@@ -45,7 +45,7 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     jReq["function"] = "ProcessData";
     jReq["version"] = "1.0";
     jReq["nonce"] = !nonce.empty() ? nonce : ShsmApiUtils::generateNonce(16);
-    jReq["objectid"] = (Json::Int64) privKey->getKeyId();
+    jReq["objectid"] = std::to_string(privKey->getKeyId());
 
     std::ostringstream dataBuilder;
     dataBuilder.str("Packet0_RSA2048_0000");
@@ -62,12 +62,19 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
 
     // Encryption & Encode
     Botan::Pipe pipe(Botan::get_cipher("AES-256/CBC/PKCS7", aesKey, aesIv, Botan::ENCRYPTION));
-    pipe.process_msg(byte, t);
+    pipe.start_msg();
+
+    // Write header of form 0x1f | <UOID-4B>
+    Botan::byte dataHeader[5] = {0xf1, 0x0, 0x0, 0x0, 0x0};
+    ShsmApiUtils::writeLongToString((unsigned long)privKey->getKeyId(), dataHeader + 1);
+    pipe.write(dataHeader, 5);
+    pipe.write(byte, t);
+    pipe.end_msg();
 
     // Read the output.
-    Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * (t + 32));
+    Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * (t + 64));
     if (buff == NULL_PTR){
-        ERROR_MSG("getRequestDecrypt", "Could not allocate enough memory for decryption operation");
+        ERROR_MSG("getRequestDecrypt", "Could not allocate enough memory for encryption operation");
         return "";
     }
 
@@ -76,10 +83,54 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     // Add hex-encoded input data here.
     dataBuilder << ShsmApiUtils::bytesToHex(buff, cipLen);
 
+    // Deallocate temporary buffer.
+    free(buff);
+
     // Build string request body.
     Json::FastWriter jWriter;
     std::string json = jWriter.write(jReq) + "\n"; // EOL at the end of the request.
     return json;
+}
+
+Botan::SecureVector<Botan::byte> ShsmUtils::readProtectedData(Botan::byte * buff, size_t size, std::string key, int * status) {
+    // AES-256-CBC encrypt data for decryption.
+    // IV is null for now, TODO: force others to change this to AES-GCM with correct IV.
+    Botan::byte iv[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    Botan::byte encKey[32];
+    ShsmApiUtils::hexToBytes(key, encKey, 32);
+    Botan::SecureVector<Botan::byte> tSecVector(encKey, 32);
+
+    Botan::SymmetricKey aesKey(tSecVector);
+    Botan::InitializationVector aesIv(iv, 16);
+
+    // Decryption.
+    Botan::Pipe pipe(Botan::get_cipher("AES-256/CBC/PKCS7", aesKey, aesIv, Botan::DECRYPTION));
+    pipe.process_msg(buff, size);
+
+    // Read the output.
+    Botan::byte * outBuff = (Botan::byte *) malloc(sizeof(Botan::byte) * (size + 64));
+    if (buff == NULL_PTR){
+        ERROR_MSG("readProtectedData", "Could not allocate enough memory for decryption operation");
+        *status = -1;
+        return Botan::SecureVector<Botan::byte>(0);
+    }
+
+    // Write header of form 0x1f | <UOID-4B>
+    size_t cipLen = pipe.read(outBuff, (size + 64));
+    if (cipLen < 5){
+        ERROR_MSG("readProtectedData", "Decryption failed, size is too small");
+        *status = -2;
+        return Botan::SecureVector<Botan::byte>(0);
+    }
+
+    // Prepare return object from the processed buffer.
+    Botan::SecureVector<Botan::byte> toReturn = Botan::SecureVector<Botan::byte>(buff + 5, cipLen - 5);
+
+    // Deallocate temporary buffer.
+    free(buff);
+
+    *status = 0;
+    return toReturn;
 }
 
 ssize_t ShsmUtils::removePkcs15Padding(const Botan::byte *buff, size_t len, Botan::byte *out, size_t maxLen, int *status) {

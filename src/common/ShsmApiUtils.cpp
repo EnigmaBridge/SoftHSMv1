@@ -126,7 +126,7 @@ std::string ShsmApiUtils::bytesToHex(const Botan::byte * byte, size_t len) {
     return ret.str();
 }
 
-int ShsmApiUtils::hexToBytes(std::string input, Botan::byte * buff, size_t maxLen) {
+size_t ShsmApiUtils::hexToBytes(std::string input, Botan::byte * buff, size_t maxLen) {
     const size_t len = input.length();
     size_t curByte = 0;
     for(size_t i = 0; i < len && curByte < maxLen*2; i++) {
@@ -155,7 +155,7 @@ int ShsmApiUtils::hexToBytes(std::string input, Botan::byte * buff, size_t maxLe
         curByte += 1;
     }
 
-    return (int)(curByte/2);
+    return (curByte/2);
 }
 
 int ShsmApiUtils::hexdigitToInt(char ch) {
@@ -201,6 +201,14 @@ int ShsmApiUtils::hexdigitToInt(char ch) {
         default:
             return -1;
     }
+}
+
+char ShsmApiUtils::intToHexDigit(int c) {
+    if (c < 0 || c > 0xf){
+        return 0x0;
+    }
+
+    return (char)((c <= 9) ? ('0' + c) : ('a' + (c - 10)));
 }
 
 std::string ShsmApiUtils::generateNonce(size_t len) {
@@ -327,4 +335,19 @@ std::string ShsmApiUtils::removeWhiteSpace(std::string &input) {
     std::string copy = input;
     copy.erase(std::remove_if(copy.begin(), copy.end(), ::isspace), copy.end());
     return copy;
+}
+
+unsigned long ShsmApiUtils::getLongFromString(const char *buff) {
+    unsigned long data = (unsigned long) ShsmApiUtils::hexdigitToInt(buff[3]);
+    data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[2])) << 8;
+    data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[1])) << 16;
+    data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[0])) << 24;
+    return data;
+}
+
+void ShsmApiUtils::writeLongToString(unsigned long id, unsigned char *buff) {
+    buff[0] = (unsigned char) ShsmApiUtils::intToHexDigit( (int) (id & 0xf) );
+    buff[1] = (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 8 )& 0xf) );
+    buff[2] = (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 16) & 0xf) );
+    buff[3] = (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 24) & 0xf) );
 }

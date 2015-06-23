@@ -6,10 +6,10 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <iomanip>
+#include <string>
 #include "PK_Decryptor_EME_Remote.h"
 #include "ShsmUtils.h"
 #include "ShsmApiUtils.h"
-
 
 PK_Decryptor_EME_Remote::PK_Decryptor_EME_Remote(ShsmPrivateKey * key,
                                                  const std::string &eme,
@@ -67,10 +67,7 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     }
 
     // Read prefix, first 4 bytes. unsigned long?
-    unsigned long prefix = (unsigned long) ShsmApiUtils::hexdigitToInt(resultString[3]);
-    prefix |= ((unsigned long) ShsmApiUtils::hexdigitToInt(resultString[2])) << 8;
-    prefix |= ((unsigned long) ShsmApiUtils::hexdigitToInt(resultString[1])) << 16;
-    prefix |= ((unsigned long) ShsmApiUtils::hexdigitToInt(resultString[0])) << 24;
+    unsigned long prefix = ShsmApiUtils::getLongFromString(resultString.c_str());
 
     // Strip suffix of the key beginning with "Packet"
     size_t pos = resultString.rfind("Packet", std::string::npos);
@@ -82,15 +79,16 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
 
     ssize_t bufferLen = decHexLen / 2;
     Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * bufferLen);
-    ShsmApiUtils::hexToBytes(decrytpedHexCoded, buff, bufferLen);
+    size_t buffSize = ShsmApiUtils::hexToBytes(decrytpedHexCoded, buff, bufferLen);
 
-    // TODO: AES-256-CBC-PKCS7 decrypt here...
-    // ...
+    // AES-256-CBC-PKCS7 decrypt
+    int decStatus = 0;
+    Botan::SecureVector<Botan::byte> decData = ShsmUtils::readProtectedData(buff, buffSize, this->connectionConfig->getKey(), &decStatus);
 
     // Remove PKCS#1 1.5 padding.
     if (this->eme == "EME-PKCS1-v1_5"){
         int paddingStatus = 0;
-        ssize_t newSize = ShsmUtils::removePkcs15Padding(buff, decHexLen / 2, buff, decHexLen / 2, &paddingStatus);
+        ssize_t newSize = ShsmUtils::removePkcs15Padding(decData.begin(), decHexLen / 2, decData.begin(), decHexLen / 2, &paddingStatus);
         if (newSize < 0){
             ERROR_MSG("decryptCall", "Decrypt error, padding cannot be removed.")
             return errRet;
