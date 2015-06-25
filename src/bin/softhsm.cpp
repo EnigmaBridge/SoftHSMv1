@@ -67,6 +67,7 @@
 #include <botan/init.h>
 #include <botan/libstate.h>
 #include <botan/numthry.h>
+#include <botan/x509cert.h>
 #include <json/json.h>
 #include "ShsmApiUtils.h"
 
@@ -898,8 +899,9 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
 
   // Write certificate to a given file.
   std::string crt = data["certificate"].asString();
+  std::string crtPEM = ShsmApiUtils::fixNewLinesInResponse(crt);
   std::ofstream crtFile(crtPath);
-  crtFile << ShsmApiUtils::fixNewLinesInResponse(crt);
+  crtFile << crtPEM;
   crtFile.close();
 
   // CA chain if path is specified
@@ -915,12 +917,63 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
 
   // Import SHSM private key. Public key and certificate will be imported by user.
   // TODO: Implement certificate & public key import. For now, it is done with help of OpenSSL and pkcs11-util.
+  // TODO: Import modulus and public exponent here! It is required by the NSS for private keys!!!
   Botan::BigInt zero(0);
 
+  // Load provided certificate.
+  Botan::DataSource_Memory crtMem((Botan::byte *)crtPEM.c_str(), crtPEM.length());
+  Botan::Public_Key * pkey = NULL_PTR;
+  Botan::X509_Certificate * x509Crt = NULL_PTR;
+  try {
+    x509Crt = new Botan::X509_Certificate(crtMem);
+    pkey = x509Crt->subject_public_key();
+  }
+  catch(std::exception& e) {
+    fprintf(stderr, "%s\n", e.what());
+    fprintf(stderr, "Error: Perhaps wrong path to file, wrong file format, or wrong PIN to file (--file-pin <PIN>). cert source: [[%s]]\n", crtPEM.c_str());
+    return 1;
+  }
+
+  if (x509Crt == NULL_PTR){
+    fprintf(stderr, "Could not load public key from the certificate");
+    return 1;
+  }
+
+  if(pkey->algo_name().compare("RSA") != 0) {
+    fprintf(stderr, "Error: %s is not a supported algorithm. Only RSA is supported.\n", pkey->algo_name().c_str());
+    delete x509Crt;
+    return 1;
+  }
+
+  Botan::IF_Scheme_PublicKey *ifKeyPub = dynamic_cast<Botan::IF_Scheme_PublicKey*>(pkey);
+  key_material_t *keyMat = (key_material_t *)malloc(sizeof(key_material_t));
+  bzero(keyMat, sizeof(key_material_t));
+  keyMat->sizeE = ifKeyPub->get_e().bytes();
+  keyMat->sizeN = ifKeyPub->get_n().bytes();
+  keyMat->bigE = (CK_VOID_PTR)malloc(keyMat->sizeE);
+  keyMat->bigN = (CK_VOID_PTR)malloc(keyMat->sizeN);
+  ifKeyPub->get_e().binary_encode((Botan::byte *)keyMat->bigE);
+  ifKeyPub->get_n().binary_encode((Botan::byte *)keyMat->bigN);
+  delete x509Crt;
+
   CK_OBJECT_CLASS privClass = CKO_PRIVATE_KEY;
+  CK_OBJECT_CLASS pubClass = CKO_PUBLIC_KEY;
   CK_KEY_TYPE keyType = CKK_RSA;
   CK_BBOOL ckTrue = CK_TRUE;
   CK_BBOOL ckFalse = CK_FALSE;
+  CK_ATTRIBUTE pubTemplate[] = {
+          { CKA_CLASS,            &pubClass,    sizeof(pubClass) },
+          { CKA_KEY_TYPE,         &keyType,     sizeof(keyType) },
+          { CKA_LABEL,            label,        strlen(label) },
+          { CKA_ID,               objID,        objIDLen },
+          { CKA_TOKEN,            &ckTrue,      sizeof(ckTrue) },
+          { CKA_VERIFY,           &ckTrue,      sizeof(ckTrue) },
+          { CKA_ENCRYPT,          &ckTrue,      sizeof(ckTrue) },
+          { CKA_WRAP,             &ckTrue,      sizeof(ckTrue) },
+          { CKA_PUBLIC_EXPONENT,  keyMat->bigE, keyMat->sizeE },
+          { CKA_MODULUS,          keyMat->bigN, keyMat->sizeN }
+  };
+
   CK_ATTRIBUTE privTemplate[] = {
           { CKA_CLASS,            &privClass,     sizeof(privClass) },
           { CKA_KEY_TYPE,         &keyType,       sizeof(keyType) },
@@ -935,8 +988,8 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
           { CKA_EXTRACTABLE,      &ckFalse,       sizeof(ckFalse) },
           { CKA_SHSM_KEY,         &ckTrue,        sizeof(ckFalse) },
           { CKA_SHSM_KEY_HANDLE,  &privKeyHandle, sizeof(privKeyHandle) },
-          { CKA_PUBLIC_EXPONENT,  &zero,          zero.bytes() },
-          { CKA_MODULUS,          &zero,          zero.bytes() },
+          { CKA_PUBLIC_EXPONENT,  keyMat->bigE,   keyMat->sizeE },
+          { CKA_MODULUS,          keyMat->bigN,   keyMat->sizeN },
           { CKA_PRIVATE_EXPONENT, &zero,          zero.bytes() },
           { CKA_PRIME_1,          &zero,          zero.bytes() },
           { CKA_PRIME_2,          &zero,          zero.bytes() },
@@ -952,6 +1005,16 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
   if(rv != CKR_OK) {
     free(objID);
     fprintf(stderr, "Error: Could not save the private key in the token, rv=%d.\n", (int) rv);
+    return 1;
+  }
+
+  rv = p11->C_CreateObject(hSession, pubTemplate, 10, &hKey2);
+
+  freeKeyMaterial(keyMat);
+  free(objID);
+  if(rv != CKR_OK) {
+    p11->C_DestroyObject(hSession, hKey1);
+    fprintf(stderr, "Error: Could not save the public key in the token.\n");
     return 1;
   }
 
