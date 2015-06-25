@@ -68,6 +68,7 @@
 #include <botan/libstate.h>
 #include <botan/numthry.h>
 #include <botan/x509cert.h>
+#include <botan/der_enc.h>
 #include <json/json.h>
 #include "ShsmApiUtils.h"
 
@@ -914,10 +915,6 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
 
   // Handle for a private key.
   Json::Int privKeyHandle = ShsmApiUtils::getIntFromJsonField(data["handle"], NULL);
-
-  // Import SHSM private key. Public key and certificate will be imported by user.
-  // TODO: Implement certificate & public key import. For now, it is done with help of OpenSSL and pkcs11-util.
-  // TODO: Import modulus and public exponent here! It is required by the NSS for private keys!!!
   Botan::BigInt zero(0);
 
   // Load provided certificate.
@@ -945,6 +942,7 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
     return 1;
   }
 
+  // Prepare public key relevant data (modulus, exponent).
   Botan::IF_Scheme_PublicKey *ifKeyPub = dynamic_cast<Botan::IF_Scheme_PublicKey*>(pkey);
   key_material_t *keyMat = (key_material_t *)malloc(sizeof(key_material_t));
   bzero(keyMat, sizeof(key_material_t));
@@ -954,10 +952,22 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
   keyMat->bigN = (CK_VOID_PTR)malloc(keyMat->sizeN);
   ifKeyPub->get_e().binary_encode((Botan::byte *)keyMat->bigE);
   ifKeyPub->get_n().binary_encode((Botan::byte *)keyMat->bigN);
-  delete x509Crt;
+
+  // Prepare certificate data.
+  Botan::MemoryVector<Botan::byte> crtBer = x509Crt->BER_encode();
+  Botan::MemoryVector<Botan::byte> serial = x509Crt->serial_number();
+
+  Botan::DER_Encoder subjectDnDer;
+  x509Crt->subject_dn().encode_into(subjectDnDer);
+  Botan::SecureVector<Botan::byte> subjectDn = subjectDnDer.get_contents();
+
+  Botan::DER_Encoder issuerDnDer;
+  x509Crt->issuer_dn().encode_into(issuerDnDer);
+  Botan::SecureVector<Botan::byte> issuerDn = issuerDnDer.get_contents();
 
   CK_OBJECT_CLASS privClass = CKO_PRIVATE_KEY;
   CK_OBJECT_CLASS pubClass = CKO_PUBLIC_KEY;
+  CK_OBJECT_CLASS crtClass = CKO_CERTIFICATE;
   CK_KEY_TYPE keyType = CKK_RSA;
   CK_BBOOL ckTrue = CK_TRUE;
   CK_BBOOL ckFalse = CK_FALSE;
@@ -998,9 +1008,34 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
           { CKA_COEFFICIENT,      &zero,          zero.bytes() }
   };
 
-  fprintf(stderr, "Going to import private key with handle: %d\n", privKeyHandle);
+  CK_CERTIFICATE_TYPE certType = CKC_X_509;
+  CK_ULONG uZero = 0ul;
+  CK_ATTRIBUTE certTemplate[] = {
+          { CKA_CLASS,            &crtClass,      sizeof(crtClass) },
+          { CKA_LABEL,            label,          strlen(label) },
+          { CKA_ID,               objID,          objIDLen },
+          { CKA_MODIFIABLE,       &ckTrue,        sizeof(ckTrue) },
+          { CKA_TRUSTED,          &ckFalse,       sizeof(ckFalse) },
+          { CKA_TOKEN,            &ckTrue,        sizeof(ckTrue) },
+          { CKA_CERTIFICATE_CATEGORY,       &uZero,      sizeof(uZero) },
+          { CKA_JAVA_MIDP_SECURITY_DOMAIN,  &uZero,      sizeof(uZero) },
+          { CKA_CERTIFICATE_TYPE,           &certType,   sizeof(certType) },
+          { CKA_CHECK_VALUE,      NULL_PTR,       0 },
+          { CKA_START_DATE,       NULL_PTR,       0 },
+          { CKA_END_DATE,         NULL_PTR,       0 },
+          { CKA_URL,              NULL_PTR,       0 },
+          { CKA_HASH_OF_SUBJECT_PUBLIC_KEY,    NULL_PTR,       0 },
+          { CKA_HASH_OF_ISSUER_PUBLIC_KEY,     NULL_PTR,       0 },
+          { CKA_SUBJECT,           subjectDn.begin(),    subjectDn.size() },
+          { CKA_ISSUER,            issuerDn.begin(),     issuerDn.size() },
+          { CKA_SERIAL_NUMBER,     serial.begin(),       serial.size() },
+          { CKA_VALUE,             crtBer.begin(),       crtBer.size() },
+  };
 
-  CK_OBJECT_HANDLE hKey1, hKey2;
+  fprintf(stderr, "Going to import private key with handle: %d. SubjectDn size: %ld and %ld, certBer %ld, serial %ld\n",
+          privKeyHandle, subjectDn.size(), issuerDn.size(), crtBer.size(), serial.size());
+
+  CK_OBJECT_HANDLE hKey1, hKey2, hKey3;
   rv = p11->C_CreateObject(hSession, privTemplate, 21, &hKey1);
   if(rv != CKR_OK) {
     free(objID);
@@ -1009,17 +1044,25 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
   }
 
   rv = p11->C_CreateObject(hSession, pubTemplate, 10, &hKey2);
-
   freeKeyMaterial(keyMat);
-  free(objID);
   if(rv != CKR_OK) {
     p11->C_DestroyObject(hSession, hKey1);
     fprintf(stderr, "Error: Could not save the public key in the token.\n");
     return 1;
   }
 
-  printf("The key pair has been imported to the token in slot %lu. Key handle: %d. Certificate written to: %s\n",
-         slotID, privKeyHandle, crtPath);
+  rv = p11->C_CreateObject(hSession, certTemplate, 19, &hKey3);
+  free(objID);
+  delete x509Crt;
+  if(rv != CKR_OK) {
+    p11->C_DestroyObject(hSession, hKey1);
+    p11->C_DestroyObject(hSession, hKey2);
+    fprintf(stderr, "Error: Could not save the certificate in the token.\n");
+    return 1;
+  }
+
+  printf("The key pair has been imported to the token in slot %lu. Key handle: %d. Certificate written to: %s. h1: %lu, h2: %lu, h3: %lu\n",
+         slotID, privKeyHandle, crtPath, hKey1, hKey2, hKey3);
 
   return 0;
 }
