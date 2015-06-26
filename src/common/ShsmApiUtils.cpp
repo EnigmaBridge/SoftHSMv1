@@ -346,8 +346,8 @@ unsigned long ShsmApiUtils::getLongFromString(const char *buff) {
 }
 
 void ShsmApiUtils::writeLongToString(unsigned long id, unsigned char *buff) {
-    buff[0] = (unsigned char) ShsmApiUtils::intToHexDigit( (int) (id & 0xf) );
-    buff[1] = (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 8 )& 0xf) );
-    buff[2] = (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 16) & 0xf) );
-    buff[3] = (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 24) & 0xf) );
+    buff[3] = (unsigned char) ShsmApiUtils::intToHexDigit( (int) (id & 0xf) );
+    buff[2] = (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 8 )& 0xf) );
+    buff[1] = (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 16) & 0xf) );
+    buff[0] = (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 24) & 0xf) );
 }
