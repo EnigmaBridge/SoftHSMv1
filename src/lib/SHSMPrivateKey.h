@@ -32,6 +32,14 @@ public:
         ShsmPrivateKey::keyId = keyId;
     }
 
+    const Botan::BigInt &getBigN() const {
+        return bigN;
+    }
+
+    const Botan::BigInt &getBigE() const {
+        return bigE;
+    }
+
 protected:
     SHSM_KEY_HANDLE keyId;
     Botan::BigInt bigN;

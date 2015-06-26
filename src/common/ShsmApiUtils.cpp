@@ -31,11 +31,12 @@ int ShsmApiUtils::connectSocket(const char * hostname, int port) {
     if (sockfd < 0) {
         return -1;
     }
-
+fprintf(stderr, "Resolving server name: %s\n", hostname);
     server = gethostbyname(hostname);
     if (server == NULL) {
         return -2;
     }
+fprintf(stderr, "Server name resolved\n");
 
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
@@ -45,10 +46,12 @@ int ShsmApiUtils::connectSocket(const char * hostname, int port) {
           (size_t)server->h_length);
 
     serv_addr.sin_port = htons(port);
+
+fprintf(stderr, "Socket connecting...\n");
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){
         return -3;
     }
-
+fprintf(stderr, "Socket connected\n");
     return sockfd;
 }
 
@@ -63,6 +66,7 @@ int ShsmApiUtils::writeToSocket(int sockfd, std::string buffToWrite) {
     ssize_t written=0;
     while(writtenTotal != clen) {
         written = write(sockfd, cstr + writtenTotal, clen - writtenTotal);
+        fprintf(stderr, "Socket written :%d\n", (int) written);
         if (written < 0){
             return -1;
         }
@@ -79,6 +83,7 @@ std::string ShsmApiUtils::readStringFromSocket(int sockfd) {
 
     ssize_t bytesRead = 0;
     while((bytesRead = read(sockfd, buffer, READ_STRING_BUFFER_SIZE)) > 0){
+fprintf(stderr, "Socket read :%d\n", (int) bytesRead);
         sb.write(buffer, bytesRead);
     }
 
@@ -86,15 +91,16 @@ std::string ShsmApiUtils::readStringFromSocket(int sockfd) {
 }
 
 std::string ShsmApiUtils::request(const char *hostname, int port, std::string request, int *status) {
-
+fprintf(stderr, "Going to create a socket to %s:%d\n", hostname, port);
     // Connect to a remote SHSM socket.
     int sockfd = ShsmApiUtils::connectSocket(hostname, port);
     if (sockfd < 0){
+fprintf(stderr, "Socket could not be opened\n");
         //DEBUG_MSG("decryptCall", "Socket could not be opened");
         *status = sockfd;
         return "";
     }
-
+fprintf(stderr, "Socket opened: %d\n", sockfd);
     // Send request over the socket.
     int res = ShsmApiUtils::writeToSocket(sockfd, request);
     if (res < 0){
@@ -102,10 +108,10 @@ std::string ShsmApiUtils::request(const char *hostname, int port, std::string re
         *status = -20;
         return "";
     }
-
+fprintf(stderr, "Socket data written\n");
     // Read JSON response from HSMS.
     std::string response = ShsmApiUtils::readStringFromSocket(sockfd);
-
+fprintf(stderr, "Socket data read [%s]\n", response.c_str());
     // Closing opened socket. Refactor for performance.
     close(sockfd);
 

@@ -1035,6 +1035,11 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
   fprintf(stderr, "Going to import private key with handle: %d. SubjectDn size: %ld and %ld, certBer %ld, serial %ld\n",
           privKeyHandle, subjectDn.size(), issuerDn.size(), crtBer.size(), serial.size());
 
+  std::string modulusStr = ShsmApiUtils::bytesToHex((Botan::byte *)keyMat->bigN, keyMat->sizeN);
+  std::string expStr     = ShsmApiUtils::bytesToHex((Botan::byte *)keyMat->bigE, keyMat->sizeE);
+  fprintf(stderr, "Modulus  of corresponding public key: 0x%s\n", modulusStr.c_str());
+  fprintf(stderr, "Exponent of corresponding public key: 0x%s\n", expStr.c_str());
+
   CK_OBJECT_HANDLE hKey1, hKey2, hKey3;
   rv = p11->C_CreateObject(hSession, privTemplate, 21, &hKey1);
   if(rv != CKR_OK) {

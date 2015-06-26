@@ -639,8 +639,11 @@ CK_RV C_CreateObject(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pTemplate, CK_
   return rv;
 }
 
-CK_RV C_CopyObject(CK_SESSION_HANDLE, CK_OBJECT_HANDLE, CK_ATTRIBUTE_PTR, CK_ULONG, CK_OBJECT_HANDLE_PTR) {
-  DEBUG_MSG("C_CopyObject", "Calling");
+CK_RV C_CopyObject(CK_SESSION_HANDLE, CK_OBJECT_HANDLE obj, CK_ATTRIBUTE_PTR, CK_ULONG, CK_OBJECT_HANDLE_PTR) {
+  char errorMsg[1024];
+  snprintf(errorMsg, sizeof(errorMsg), "Calling, object: %lu", obj);
+
+  DEBUG_MSG("C_CopyObject", errorMsg);
   DEBUG_MSG("C_CopyObject", "The function is not implemented.");
 
   return CKR_FUNCTION_NOT_SUPPORTED;
@@ -1135,7 +1138,7 @@ CK_RV C_DecryptInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_
 
 CK_RV C_Decrypt(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pEncryptedData, CK_ULONG ulEncryptedDataLen, 
                 CK_BYTE_PTR pData, CK_ULONG_PTR pulDataLen) {
-  DEBUG_MSG("C_Decrypt", "Calling");
+  ERROR_MSG("C_Decrypt", "Calling");
 
   SoftHSMInternal *softHSM = state.get();
   CHECK_DEBUG_RETURN(softHSM == NULL, "C_Decrypt", "Library is not initialized",
@@ -1143,17 +1146,19 @@ CK_RV C_Decrypt(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pEncryptedData, CK_ULONG
 
   SoftSession *session = softHSM->getSession(hSession);
   if(session == NULL_PTR) {
-    DEBUG_MSG("C_Decrypt", "Cannot find the session");
+    ERROR_MSG("C_Decrypt", "Cannot find the session");
     return CKR_SESSION_HANDLE_INVALID;
   }
 
   if(!session->decryptInitialized) {
-    DEBUG_MSG("C_Decrypt", "Decrypt is not initialized");
+    ERROR_MSG("C_Decrypt", "Decrypt is not initialized");
     return CKR_OPERATION_NOT_INITIALIZED;
   }
 
+  DEBUG_MSGF(("sess: %d, encLen: %lu, pdata: %p, pulLen: %lu, sessiondec: %lu",
+          hSession, ulEncryptedDataLen, pData, *pulDataLen, session->decryptSize));
   if(pulDataLen == NULL_PTR) {
-    DEBUG_MSG("C_Decrypt", "pulDataLen must not be a NULL_PTR");
+    ERROR_MSG("C_Decrypt", "pulDataLen must not be a NULL_PTR");
 
     // Finalizing
     session->decryptSize = 0;
@@ -1172,18 +1177,18 @@ CK_RV C_Decrypt(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pEncryptedData, CK_ULONG
 
   if(pData == NULL_PTR) {
     *pulDataLen = session->decryptSize;
-    DEBUG_MSG("C_Decrypt", "OK, returning the size of the decrypted data");
+    ERROR_MSG("C_Decrypt", "OK, returning the size of the decrypted data");
     return CKR_OK;
   }
 
   if(*pulDataLen < session->decryptSize) {
     *pulDataLen = session->decryptSize;
-    DEBUG_MSG("C_Decrypt", "The given buffer is too small");
+    ERROR_MSG("C_Decrypt", "The given buffer is too small");
     return CKR_BUFFER_TOO_SMALL;
   }
 
   if(pEncryptedData == NULL_PTR) {
-    DEBUG_MSG("C_Decrypt", "pEncryptedData must not be a NULL_PTR");
+    ERROR_MSG("C_Decrypt", "pEncryptedData must not be a NULL_PTR");
 
     // Finalizing
     session->decryptSize = 0;

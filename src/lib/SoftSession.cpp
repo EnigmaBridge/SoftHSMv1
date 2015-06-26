@@ -185,6 +185,7 @@ Botan::Public_Key* SoftSession::getKey(CK_OBJECT_HANDLE hKey) {
         }
 
         try {
+          DEBUG_MSGF(("ShsmPrivateKey, bigN: %d, bits: %d, handle: %d", bigN.size(), bigN.bits(), shsmHandle));
           tmpKey = new ShsmPrivateKey(bigN, bigE, shsmHandle);
         }
         catch(std::exception& e) {

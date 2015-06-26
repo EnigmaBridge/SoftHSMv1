@@ -573,7 +573,12 @@ CK_RV SoftHSMInternal::getAttributeValue(CK_SESSION_HANDLE hSession, CK_OBJECT_H
   CK_RV result = CKR_OK;
   CK_RV objectResult = CKR_OK;
 
+  char errorMsg[1024];
+
   for(CK_ULONG i = 0; i < ulCount; i++) {
+    snprintf(errorMsg, sizeof(errorMsg), "Calling, object: %lu, templ: %lu, type: %lu (0x%x)", hObject, ulCount, pTemplate[i].type, pTemplate[i].type);
+    DEBUG_MSG("C_GetAttributeValue", errorMsg);
+
     objectResult = session->db->getAttribute(hObject, &pTemplate[i]);
     if(objectResult != CKR_OK) {
       result = objectResult;

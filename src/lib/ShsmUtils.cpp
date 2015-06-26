@@ -72,12 +72,17 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     Botan::Pipe pipe(Botan::get_cipher("AES-256/CBC/PKCS7", aesKey, aesIv, Botan::ENCRYPTION));
     pipe.start_msg();
 
+    std::string toDecryptStr = ShsmApiUtils::bytesToHex(byte, t);
+    DEBUG_MSGF(("To decode req: [%s]", toDecryptStr.c_str()));
+
     // Write header of form 0x1f | <UOID-4B>
     Botan::byte dataHeader[5] = {0x1f, 0x0, 0x0, 0x0, 0x0};
     ShsmApiUtils::writeLongToBuff((unsigned long)keyId, dataHeader + 1);
     pipe.write(dataHeader, 5);
     pipe.write(byte, t);
     pipe.end_msg();
+
+    DEBUG_MSGF(("%x %x %x %x %x key: %lu", dataHeader[0], dataHeader[1], dataHeader[2], dataHeader[3], dataHeader[4], (unsigned long)keyId));
 
     // Read the output.
     Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * (t + 64));
@@ -138,6 +143,16 @@ Botan::SecureVector<Botan::byte> ShsmUtils::readProtectedData(Botan::byte * buff
         return Botan::SecureVector<Botan::byte>(0);
     }
 
+    DEBUG_MSGF(("After decryption: cipLen=%lu, %x %x %x %x %x %x %x", cipLen,
+               outBuff[0],
+               outBuff[1],
+               outBuff[2],
+               outBuff[3],
+               outBuff[4],
+               outBuff[5],
+               outBuff[6]
+               ));
+
     // Prepare return object from the processed buffer.
     Botan::SecureVector<Botan::byte> toReturn = Botan::SecureVector<Botan::byte>(outBuff + 5, cipLen - 5);
 
@@ -165,6 +180,15 @@ ssize_t ShsmUtils::removePkcs15Padding(const Botan::byte *buff, size_t len, Bota
     }
 
     // Check the first byte.
+    DEBUG_MSGF(("RAW data: %x %x %x %x %x %x %x",
+               buff[0],
+               buff[1],
+               buff[2],
+               buff[3],
+               buff[4],
+               buff[5],
+               buff[6]
+               ));
     if (buff[0] != (Botan::byte)0x0){
         ERROR_MSG("removePkcs15Padding", "Padding data error, prefix is not 00");
         *status = -2;
