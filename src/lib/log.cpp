@@ -35,6 +35,8 @@
 
 #ifndef WIN32
 #include <syslog.h>
+#include <stdarg.h>
+
 #else
 #include <windows.h>
 #include <stdio.h>
@@ -91,6 +93,17 @@ void logInfo(const char *functionName, const char *text) {
 void logDebug(const char *functionName, const char *text) {
 #ifndef WIN32
   syslog(LOG_DEBUG, "SoftHSM: %s: %s", functionName, text);
+#else
+  logInfo(functionName, text);
+#endif
+}
+
+void logDebugF(const char *text, ...) {
+#ifndef WIN32
+  va_list arg;
+  va_start(arg, text);
+  vsyslog(LOG_ERR, text, arg);
+  va_end(arg);
 #else
   logInfo(functionName, text);
 #endif

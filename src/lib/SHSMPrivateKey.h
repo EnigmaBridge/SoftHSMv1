@@ -7,24 +7,14 @@
 #include <botan/rsa.h>
 #include "ShsmApiUtils.h"
 
-class ShsmPrivateKey : public Botan::RSA_PrivateKey {
+class ShsmPrivateKey : public Botan::RSA_PublicKey,
+                       public Botan::IF_Scheme_PrivateKey {
 
 public:
 
-    ShsmPrivateKey(Botan::RandomNumberGenerator &rng, size_t bits, size_t exp, unsigned long keyId) : RSA_PrivateKey(
-            rng, bits, exp), keyId(keyId) { }
-
-    ShsmPrivateKey(Botan::RandomNumberGenerator &rng, size_t bits, size_t exp) : RSA_PrivateKey(rng, bits, exp) { }
-
-    ShsmPrivateKey(Botan::RandomNumberGenerator &rng, const Botan::BigInt &p, const Botan::BigInt &q,
-                   const Botan::BigInt &e, const Botan::BigInt &d, const Botan::BigInt &n) : RSA_PrivateKey(rng, p, q, e, d, n) { }
-
-    ShsmPrivateKey(Botan::RandomNumberGenerator &rng, const Botan::BigInt &p, const Botan::BigInt &q,
-                   const Botan::BigInt &e, const Botan::BigInt &d, const Botan::BigInt &n, SHSM_KEY_HANDLE shsmHandle) :
-            RSA_PrivateKey(rng, p, q, e, d, n), keyId(shsmHandle) { }
-
-    ShsmPrivateKey(const Botan::AlgorithmIdentifier &alg_id, const Botan::MemoryRegion<Botan::byte> &key_bits,
-                   Botan::RandomNumberGenerator &rng) : RSA_PrivateKey(alg_id, key_bits, rng) { }
+    ShsmPrivateKey(const Botan::BigInt n, const Botan::BigInt e, SHSM_KEY_HANDLE keyId) : RSA_PublicKey(n, e),
+                                                                                 IF_Scheme_PrivateKey(),
+                                                                                 keyId(keyId), bigN(n), bigE(e) { }
 
     virtual std::string algo_name() const;
 
@@ -44,6 +34,8 @@ public:
 
 protected:
     SHSM_KEY_HANDLE keyId;
+    Botan::BigInt bigN;
+    Botan::BigInt bigE;
 };
 
 

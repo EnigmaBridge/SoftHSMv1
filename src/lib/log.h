@@ -55,8 +55,10 @@
 
 #if SOFTLOGLEVEL >= SOFTDEBUG
 #define DEBUG_MSG(func, text) logDebug(func, text);
+#define DEBUG_MSGF(arg) logDebugF arg
 #else
 #define DEBUG_MSG(func, text)
+#define DEBUG_MSGF(arg)
 #endif
 
 #define CHECK_DEBUG_RETURN(exp, func, text, retVal) \
@@ -69,5 +71,6 @@ void logError(const char *functionName, const char *text);
 void logWarning(const char *functionName, const char *text);
 void logInfo(const char *functionName, const char *text);
 void logDebug(const char *functionName, const char *text);
+void logDebugF(const char *text, ...);
 
 #endif /* SOFTHSM_LOG_H */

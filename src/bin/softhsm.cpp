@@ -914,7 +914,7 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
   }
 
   // Handle for a private key.
-  Json::Int privKeyHandle = ShsmApiUtils::getIntFromJsonField(data["handle"], NULL);
+  SHSM_KEY_HANDLE privKeyHandle = (SHSM_KEY_HANDLE) ShsmApiUtils::getIntFromJsonField(data["handle"], NULL);
   Botan::BigInt zero(0);
 
   // Load provided certificate.

@@ -18,7 +18,7 @@
 
 // Type of the SHSM_KEY_HANDLE.
 #define SHSM_KEY_HANDLE long
-#define SHSM_INVALID_KEY_HANDLE -1
+#define SHSM_INVALID_KEY_HANDLE -1l
 
 class ShsmApiUtils {
 

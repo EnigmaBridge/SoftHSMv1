@@ -3,12 +3,14 @@
 //
 
 #include "ShsmPrivateKey.h"
+#include "log.h"
+
 std::string ShsmPrivateKey::algo_name() const {
     return "RSA";
 }
 
 size_t ShsmPrivateKey::max_input_bits() const {
-    return 8192;
+    return bigN.bits() - 1;
 }
 
 Botan::AlgorithmIdentifier ShsmPrivateKey::algorithm_identifier() const {

@@ -25,7 +25,7 @@ CK_BBOOL ShsmUtils::isShsmKey(SoftDatabase *db, CK_OBJECT_HANDLE hKey) {
 }
 
 SHSM_KEY_HANDLE ShsmUtils::getShsmKeyHandle(SoftDatabase *db, CK_OBJECT_HANDLE hKey) {
-    SHSM_KEY_HANDLE shsmHandle;
+    SHSM_KEY_HANDLE shsmHandle = SHSM_INVALID_KEY_HANDLE;
 
     // Load this attribute via generic DB access call.
     CK_ATTRIBUTE attr = {CKA_SHSM_KEY_HANDLE, (void *) &shsmHandle, sizeof(SHSM_KEY_HANDLE)};
@@ -45,7 +45,11 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     jReq["function"] = "ProcessData";
     jReq["version"] = "1.0";
     jReq["nonce"] = !nonce.empty() ? nonce : ShsmApiUtils::generateNonce(16);
-    jReq["objectid"] = std::to_string(privKey->getKeyId());
+
+    // Object id, long to string.
+    char buf[16] = {0};
+    snprintf(buf, 16, "%d", (int) privKey->getKeyId());
+    jReq["objectid"] = buf;
 
     std::ostringstream dataBuilder;
     dataBuilder.str("Packet0_RSA2048_0000");
@@ -85,6 +89,9 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
 
     // Deallocate temporary buffer.
     free(buff);
+
+    // ProcessData - add data part.
+    jReq["data"] = dataBuilder.str();
 
     // Build string request body.
     Json::FastWriter jWriter;

@@ -42,6 +42,7 @@
 #include <pkcs11.h>
 #include "ShsmPrivateKey.h"
 #include "ShsmUtils.h"
+#include "log.h"
 
 SoftSession::SoftSession(CK_FLAGS rwSession, SoftSlot *givenSlot, char *appID) {
   pApplication = NULL_PTR;
@@ -164,21 +165,31 @@ Botan::Public_Key* SoftSession::getKey(CK_OBJECT_HANDLE hKey) {
           tmpKey = new Botan::RSA_PrivateKey(*rng, bigP, bigQ, bigE, bigD, bigN);
         }
         catch(...) {
+          ERROR_MSG("getKey", "RSA private key init exception");
           return NULL_PTR;
         }
 
       } else if (objClass == CKO_PRIVATE_KEY && isShsm) {
         // Load attributes related to SHSM RSA private key - SHSM key id.
         SHSM_KEY_HANDLE shsmHandle = ShsmUtils::getShsmKeyHandle(this->db, hKey);
-        if (shsmHandle != SHSM_INVALID_KEY_HANDLE){
+        if (shsmHandle == SHSM_INVALID_KEY_HANDLE){
+          ERROR_MSG("getKey", "Invalid SHSM handle");
           return NULL_PTR;
         }
 
-        Botan::BigInt bigZero;
-        try {
-          tmpKey = new ShsmPrivateKey(*rng, bigZero, bigZero, bigZero, bigZero, bigZero, shsmHandle); // new Botan::RSA_PrivateKey(*rng, bigZero, bigZero, bigZero, bigZero, bigZero);
+        Botan::BigInt bigN = this->db->getBigIntAttribute(hKey, CKA_MODULUS);
+        Botan::BigInt bigE = this->db->getBigIntAttribute(hKey, CKA_PUBLIC_EXPONENT);
+        if (bigN.is_zero() || bigE.is_zero()) {
+          ERROR_MSG("getKey", "N or E is null for SHSM key");
+          return NULL_PTR;
         }
-        catch(...) {
+
+        try {
+          tmpKey = new ShsmPrivateKey(bigN, bigE, shsmHandle);
+        }
+        catch(std::exception& e) {
+          ERROR_MSG("getKey", "ShsmPrivateKey key init exception");
+          DEBUG_MSGF(("Exception: %s, hKey: %ld, bigN: %d, bits: %d", e.what(), hKey, bigN.size(), bigN.bits()));
           return NULL_PTR;
         }
 
@@ -194,11 +205,13 @@ Botan::Public_Key* SoftSession::getKey(CK_OBJECT_HANDLE hKey) {
           tmpKey = new Botan::RSA_PublicKey(bigN, bigE);
         }
         catch(...) {
+          ERROR_MSG("getKey", "RSA_PublicKey key init exception");
           return NULL_PTR;
         }
 
       } else {
         // ERROR.
+        ERROR_MSG("getKey", "Unknown key");
         return NULL_PTR;
       }
 
