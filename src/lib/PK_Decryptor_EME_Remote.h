@@ -52,7 +52,7 @@
 /**
  * Class for PK decryption using remote call to HSM.
  */
-class PK_Decryptor_EME_Remote : public Botan::PK_Decryptor_EME {
+class PK_Decryptor_EME_Remote : public Botan::PK_Decryptor {
 protected:
     /**
      * Connection configuration to use for decryption call.

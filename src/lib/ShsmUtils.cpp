@@ -82,7 +82,7 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
         return "";
     }
 
-    size_t cipLen = pipe.read(buff, (t + 32));
+    size_t cipLen = pipe.read(buff, (t + 64));
 
     // Add hex-encoded input data here.
     dataBuilder << ShsmApiUtils::bytesToHex(buff, cipLen);

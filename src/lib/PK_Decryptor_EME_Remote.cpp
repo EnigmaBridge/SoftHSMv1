@@ -13,7 +13,7 @@
 
 PK_Decryptor_EME_Remote::PK_Decryptor_EME_Remote(ShsmPrivateKey * key,
                                                  const std::string &eme,
-                                                 const SoftSlot *curSlot) : PK_Decryptor_EME(*key, eme)
+                                                 const SoftSlot *curSlot) : PK_Decryptor()
 {
     std::string host = curSlot->getHost();
     std::string ckey = curSlot->getKey();
@@ -39,7 +39,8 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     std::string response = ShsmApiUtils::request(this->connectionConfig->getMHost().c_str(),
                                                  this->connectionConfig->getMPort(),
                                                  json, &reqResult);
-    if (!reqResult){
+    if (reqResult != 0){
+        DEBUG_MSGF(("Request result failed %d", reqResult));
         return errRet;
     }
 
@@ -49,12 +50,15 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     bool parsedSuccess = reader.parse(response, root, false);
     if(!parsedSuccess) {
         ERROR_MSG("decryptCall", "Could not read data from socket");
+        DEBUG_MSGF(("Response: [%s]", response.c_str()));
         return errRet;
     }
 
     // Check status code.
-    if (ShsmApiUtils::getStatus(root) != 9000){
+    int resultCode = ShsmApiUtils::getStatus(root);
+    if (resultCode != 9000){
         ERROR_MSG("decryptCall", "Result code is not 9000, cannot decrypt");
+        DEBUG_MSGF(("Result code: %d, response: [%s]", resultCode, response.c_str()));
         return errRet;
     }
 
