@@ -37,6 +37,8 @@ libsofthsm_la_SOURCES =		main.cpp main.h \
 				ShsmConnectionConfig.cpp \
 				ShsmPrivateKey.h \
 				ShsmPrivateKey.cpp \
+				ShsmNullRng.h \
+				ShsmNullRng.cpp \
 				ShsmUtils.h \
 				ShsmUtils.cpp
 
