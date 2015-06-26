@@ -80,8 +80,7 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
 
     // Allocate memory buffer for decrypted block, convert from hexa string coding to bytes
     const size_t decHexLen = decrytpedHexCoded.length();
-
-    ssize_t bufferLen = decHexLen / 2;
+    const size_t bufferLen = decHexLen / 2;
     Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * bufferLen);
     size_t buffSize = ShsmApiUtils::hexToBytes(decrytpedHexCoded, buff, bufferLen);
 
@@ -89,16 +88,19 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     int decStatus = 0;
     Botan::SecureVector<Botan::byte> decData = ShsmUtils::readProtectedData(buff, buffSize, this->connectionConfig->getKey(), &decStatus);
 
+    // Adjust data size, padding / aux info may got stripped.
+    buffSize = decData.size();
+    free(buff);
+
     // Remove PKCS#1 1.5 padding.
     if (this->eme == "EME-PKCS1-v1_5"){
         int paddingStatus = 0;
-        ssize_t newSize = ShsmUtils::removePkcs15Padding(decData.begin(), decHexLen / 2, decData.begin(), decHexLen / 2, &paddingStatus);
+        ssize_t newSize = ShsmUtils::removePkcs15Padding(decData.begin(), buffSize, decData.begin(), bufferLen, &paddingStatus);
         if (newSize < 0){
-            ERROR_MSG("decryptCall", "Decrypt error, padding cannot be removed.")
-            return errRet;
+            DEBUG_MSG("decryptCall", "Decrypt error, padding cannot be removed.")
+        } else {
+            buffSize = (size_t) newSize;
         }
-
-        bufferLen = newSize;
 
     } else {
         ERROR_MSG("decryptCall", "Padding cannot be determined.");
@@ -106,7 +108,7 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     }
 
     // Allocate new secure vector and return it.
-    return Botan::SecureVector<Botan::byte>(decData.begin(), bufferLen);
+    return Botan::SecureVector<Botan::byte>(decData.begin(), buffSize);
 }
 
 Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::dec(const Botan::byte byte[], size_t t) const {

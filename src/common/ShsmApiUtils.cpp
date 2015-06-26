@@ -29,13 +29,11 @@ int ShsmApiUtils::connectSocket(const char * hostname, int port) {
     struct hostent *server;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
-        //ERROR_MSG("decryptCall", "ERROR in opening socket");
         return -1;
     }
 
     server = gethostbyname(hostname);
     if (server == NULL) {
-        //ERROR_MSG("decryptCall", "ERROR, no such host");
         return -2;
     }
 
@@ -48,7 +46,6 @@ int ShsmApiUtils::connectSocket(const char * hostname, int port) {
 
     serv_addr.sin_port = htons(port);
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){
-        //ERROR_MSG("decryptCall", "ERROR connecting");
         return -3;
     }
 
@@ -67,7 +64,6 @@ int ShsmApiUtils::writeToSocket(int sockfd, std::string buffToWrite) {
     while(writtenTotal != clen) {
         written = write(sockfd, cstr + writtenTotal, clen - writtenTotal);
         if (written < 0){
-            //DEBUG_MSG("writeToSocket", "ERROR in writing to a socket");
             return -1;
         }
 
@@ -95,7 +91,7 @@ std::string ShsmApiUtils::request(const char *hostname, int port, std::string re
     int sockfd = ShsmApiUtils::connectSocket(hostname, port);
     if (sockfd < 0){
         //DEBUG_MSG("decryptCall", "Socket could not be opened");
-        *status = -1;
+        *status = sockfd;
         return "";
     }
 
@@ -103,7 +99,7 @@ std::string ShsmApiUtils::request(const char *hostname, int port, std::string re
     int res = ShsmApiUtils::writeToSocket(sockfd, request);
     if (res < 0){
         //DEBUG_MSG("decryptCall", "Socket could not be used for writing");
-        *status = -2;
+        *status = -20;
         return "";
     }
 
@@ -346,8 +342,32 @@ unsigned long ShsmApiUtils::getLongFromString(const char *buff) {
 }
 
 void ShsmApiUtils::writeLongToString(unsigned long id, unsigned char *buff) {
-    buff[3] = (unsigned char) ShsmApiUtils::intToHexDigit( (int) (id & 0xf) );
-    buff[2] = (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 8 )& 0xf) );
-    buff[1] = (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 16) & 0xf) );
-    buff[0] = (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 24) & 0xf) );
+    buff[0] = 0;
+    buff[1] = 0;
+    buff[2] = 0;
+    buff[3] = 0;
+
+    buff[3] |= (unsigned char) ShsmApiUtils::intToHexDigit( (int) (id & 0xf) );
+    buff[3] |= (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 4 ) & 0xf));
+    buff[2] |= (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 8 ) & 0xf) );
+    buff[2] |= (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 12) & 0xf) );
+    buff[1] |= (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 16) & 0xf) );
+    buff[1] |= (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 20) & 0xf) );
+    buff[0] |= (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 24) & 0xf) );
+    buff[0] |= (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 28) & 0xf) );
+}
+
+unsigned long ShsmApiUtils::getLongFromBuff(const char *buff) {
+    unsigned long data = (unsigned long) ((unsigned char) buff[3]) & 0xff;
+    data |= ((unsigned long) ((unsigned char) buff[2]) & 0xff) << 8;
+    data |= ((unsigned long) ((unsigned char) buff[1]) & 0xff) << 16;
+    data |= ((unsigned long) ((unsigned char) buff[0]) & 0xff) << 24;
+    return data;
+}
+
+void ShsmApiUtils::writeLongToBuff(unsigned long id, unsigned char *buff) {
+    buff[3] = (unsigned char) (id & 0xff);
+    buff[2] = (unsigned char) ((id >> 8 ) & 0xff);
+    buff[1] = (unsigned char) ((id >> 16) & 0xff);
+    buff[0] = (unsigned char) ((id >> 24) & 0xff);
 }

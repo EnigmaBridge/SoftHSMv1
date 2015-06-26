@@ -45,10 +45,11 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     jReq["function"] = "ProcessData";
     jReq["version"] = "1.0";
     jReq["nonce"] = !nonce.empty() ? nonce : ShsmApiUtils::generateNonce(16);
+    const int keyId = (int) privKey->getKeyId();
 
     // Object id, long to string.
     char buf[16] = {0};
-    snprintf(buf, 16, "%d", (int) privKey->getKeyId());
+    snprintf(buf, 16, "%d", keyId);
     jReq["objectid"] = buf;
 
     std::ostringstream dataBuilder;
@@ -58,8 +59,11 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     // IV is null for now, TODO: force others to change this to AES-GCM with correct IV.
     Botan::byte iv[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     Botan::byte encKey[32];
-    ShsmApiUtils::hexToBytes(key, encKey, 32);
+    size_t keySize = ShsmApiUtils::hexToBytes(key, encKey, 32);
     Botan::SecureVector<Botan::byte> tSecVector(encKey, 32);
+    if (keySize != 32){
+        ERROR_MSG("getRequestDecrypt", "AES key size is invalid");
+    }
 
     Botan::SymmetricKey aesKey(tSecVector);
     Botan::InitializationVector aesIv(iv, 16);
@@ -70,7 +74,7 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
 
     // Write header of form 0x1f | <UOID-4B>
     Botan::byte dataHeader[5] = {0x1f, 0x0, 0x0, 0x0, 0x0};
-    ShsmApiUtils::writeLongToString((unsigned long)privKey->getKeyId(), dataHeader + 1);
+    ShsmApiUtils::writeLongToBuff((unsigned long)keyId, dataHeader + 1);
     pipe.write(dataHeader, 5);
     pipe.write(byte, t);
     pipe.end_msg();
@@ -104,8 +108,11 @@ Botan::SecureVector<Botan::byte> ShsmUtils::readProtectedData(Botan::byte * buff
     // IV is null for now, TODO: force others to change this to AES-GCM with correct IV.
     Botan::byte iv[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     Botan::byte encKey[32];
-    ShsmApiUtils::hexToBytes(key, encKey, 32);
+    size_t keySize = ShsmApiUtils::hexToBytes(key, encKey, 32);
     Botan::SecureVector<Botan::byte> tSecVector(encKey, 32);
+    if (keySize != 32){
+        ERROR_MSG("getRequestDecrypt", "AES key size is invalid");
+    }
 
     Botan::SymmetricKey aesKey(tSecVector);
     Botan::InitializationVector aesIv(iv, 16);

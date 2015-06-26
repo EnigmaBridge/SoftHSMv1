@@ -114,6 +114,17 @@ public:
      * Writes long to the string on the given pointer. Has to have at least 4 B.
      */
     static void writeLongToString(unsigned long id, unsigned char * buff);
+
+    /**
+     * Reads 4 bytes long representation, converts to unsigned long.
+     * Buff has to be at least 4 bytes long.
+     */
+    static unsigned long getLongFromBuff(const char * buff);
+
+    /**
+     * Writes long to the string on the given pointer. Has to have at least 4 B.
+     */
+    static void writeLongToBuff(unsigned long id, unsigned char * buff);
 };
 
 
