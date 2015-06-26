@@ -106,7 +106,7 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     }
 
     // Allocate new secure vector and return it.
-    return Botan::SecureVector<Botan::byte>(buff, bufferLen);
+    return Botan::SecureVector<Botan::byte>(decData.begin(), bufferLen);
 }
 
 Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::dec(const Botan::byte byte[], size_t t) const {
