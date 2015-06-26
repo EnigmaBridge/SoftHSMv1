@@ -131,10 +131,10 @@ Botan::SecureVector<Botan::byte> ShsmUtils::readProtectedData(Botan::byte * buff
     }
 
     // Prepare return object from the processed buffer.
-    Botan::SecureVector<Botan::byte> toReturn = Botan::SecureVector<Botan::byte>(buff + 5, cipLen - 5);
+    Botan::SecureVector<Botan::byte> toReturn = Botan::SecureVector<Botan::byte>(outBuff + 5, cipLen - 5);
 
     // Deallocate temporary buffer.
-    free(buff);
+    free(outBuff);
 
     *status = 0;
     return toReturn;
