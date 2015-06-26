@@ -69,7 +69,7 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     pipe.start_msg();
 
     // Write header of form 0x1f | <UOID-4B>
-    Botan::byte dataHeader[5] = {0xf1, 0x0, 0x0, 0x0, 0x0};
+    Botan::byte dataHeader[5] = {0x1f, 0x0, 0x0, 0x0, 0x0};
     ShsmApiUtils::writeLongToString((unsigned long)privKey->getKeyId(), dataHeader + 1);
     pipe.write(dataHeader, 5);
     pipe.write(byte, t);
