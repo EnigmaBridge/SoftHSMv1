@@ -52,7 +52,7 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     jReq["objectid"] = buf;
 
     std::ostringstream dataBuilder;
-    dataBuilder.str("Packet0_RSA2048_0000");
+    dataBuilder << "Packet0_RSA2048_0000";
 
     // AES-256-CBC encrypt data for decryption.
     // IV is null for now, TODO: force others to change this to AES-GCM with correct IV.
