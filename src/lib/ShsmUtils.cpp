@@ -134,6 +134,7 @@ Botan::SecureVector<Botan::byte> ShsmUtils::readProtectedData(Botan::byte * buff
     if (cipLen < 5){
         ERROR_MSG("readProtectedData", "Decryption failed, size is too small");
         *status = -2;
+        free(outBuff);
         return Botan::SecureVector<Botan::byte>(0);
     }
 
