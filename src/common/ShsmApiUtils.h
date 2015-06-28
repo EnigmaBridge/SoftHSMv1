@@ -130,6 +130,16 @@ public:
      * Writes long to the string on the given pointer. Has to have at least 4 B.
      */
     static void writeLongToBuff(unsigned long id, unsigned char * buff);
+
+    /**
+     * Loads current time.
+     */
+    static void gettimespec(struct timespec *ts, uint32_t offset);
+
+    /**
+     * Computes a difference between tHigh and tLow and returns time in milliseconds.
+     */
+    static long diffTimeMilli(struct timeval * tLow, struct timeval * tHigh);
 };
 
 

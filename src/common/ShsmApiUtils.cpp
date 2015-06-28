@@ -21,8 +21,10 @@
 #include <stdio.h>
 #include <algorithm>
 
-#define READ_STRING_BUFFER_SIZE 8192
+// TODO: if win32, do differently.
+#include <sys/time.h>
 
+#define READ_STRING_BUFFER_SIZE 8192
 
 int ShsmApiUtils::setSocketTimeout(int socket, int timeoutType, uint64_t timeoutValueMilli) {
     if (timeoutValueMilli == 0){
@@ -121,6 +123,10 @@ fprintf(stderr, "Socket read :%d\n", (int) bytesRead);
 
 std::string ShsmApiUtils::request(const char *hostname, int port, std::string request, int *status) {
 fprintf(stderr, "Going to create a socket to %s:%d\n", hostname, port);
+    struct timeval tm1;
+    struct timeval tm2;
+    gettimeofday(&tm1, NULL);
+
     // Connect to a remote SHSM socket.
     int sockfd = ShsmApiUtils::connectSocket(hostname, port, 45000ul, 45000ul);
     if (sockfd < 0){
@@ -143,6 +149,9 @@ fprintf(stderr, "Socket data written\n");
 fprintf(stderr, "Socket data read [%s]\n", response.c_str());
     // Closing opened socket. Refactor for performance.
     close(sockfd);
+
+    gettimeofday(&tm2, NULL);
+    fprintf(stderr, "Time spent in the request call: %ld ms\n", ShsmApiUtils::diffTimeMilli(&tm1, &tm2));
 
     *status = 0;
     return response;
@@ -405,4 +414,15 @@ void ShsmApiUtils::writeLongToBuff(unsigned long id, unsigned char *buff) {
     buff[2] = (unsigned char) ((id >> 8 ) & 0xff);
     buff[1] = (unsigned char) ((id >> 16) & 0xff);
     buff[0] = (unsigned char) ((id >> 24) & 0xff);
+}
+
+void ShsmApiUtils::gettimespec(struct timespec *ts, uint32_t offset) {
+    struct timeval tv;
+    (void)gettimeofday(&tv, NULL);
+    ts->tv_sec  = tv.tv_sec + offset;
+    ts->tv_nsec = tv.tv_usec * 1000;
+}
+
+long ShsmApiUtils::diffTimeMilli(struct timeval *tLow, struct timeval *tHigh) {
+    return 1000l * (tHigh->tv_sec - tLow->tv_sec) + (tHigh->tv_usec - tLow->tv_usec) / 1000l;
 }
