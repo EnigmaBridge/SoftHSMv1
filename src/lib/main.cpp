@@ -1151,7 +1151,7 @@ CK_RV C_Decrypt(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pEncryptedData, CK_ULONG
     return CKR_OPERATION_NOT_INITIALIZED;
   }
 
-  DEBUG_MSGF(("sess: %d, encLen: %lu, pdata: %p, pulLen: %lu, sessiondec: %lu",
+  DEBUG_MSGF(("C_Decrypt: sess: %d, encLen: %lu, pdata: %p, pulLen: %lu, sessiondec: %lu",
           hSession, ulEncryptedDataLen, pData, *pulDataLen, session->decryptSize));
   if(pulDataLen == NULL_PTR) {
     ERROR_MSG("C_Decrypt", "pulDataLen must not be a NULL_PTR");

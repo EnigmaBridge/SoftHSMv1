@@ -19,6 +19,7 @@
 #include <botan/b64_filt.h>
 #include <botan/engine.h>
 #include <botan/lookup.h>
+#define TAG "ShsmUtils: "
 
 CK_BBOOL ShsmUtils::isShsmKey(SoftDatabase *db, CK_OBJECT_HANDLE hKey) {
     return db->getBooleanAttribute(hKey, CKA_SHSM_KEY, CK_FALSE);
@@ -73,7 +74,7 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     pipe.start_msg();
 
     std::string toDecryptStr = ShsmApiUtils::bytesToHex(byte, t);
-    DEBUG_MSGF(("To decode req: [%s]", toDecryptStr.c_str()));
+    DEBUG_MSGF((TAG"To decode req: [%s]", toDecryptStr.c_str()));
 
     // Write header of form 0x1f | <UOID-4B>
     Botan::byte dataHeader[5] = {0x1f, 0x0, 0x0, 0x0, 0x0};
@@ -82,7 +83,7 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     pipe.write(byte, t);
     pipe.end_msg();
 
-    DEBUG_MSGF(("%x %x %x %x %x key: %lu", dataHeader[0], dataHeader[1], dataHeader[2], dataHeader[3], dataHeader[4], (unsigned long)keyId));
+    DEBUG_MSGF((TAG"DataHeader: %x %x %x %x %x keyId: %lu", dataHeader[0], dataHeader[1], dataHeader[2], dataHeader[3], dataHeader[4], (unsigned long)keyId));
 
     // Read the output.
     Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * (t + 64));
@@ -92,7 +93,7 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     }
 
     size_t cipLen = pipe.read(buff, (t + 64));
-    DEBUG_MSGF(("Encrypted message len: %lu", cipLen));
+    DEBUG_MSGF((TAG"Encrypted message len: %lu", cipLen));
 
     // Add hex-encoded input data here.
     dataBuilder << ShsmApiUtils::bytesToHex(buff, cipLen);
@@ -144,7 +145,7 @@ Botan::SecureVector<Botan::byte> ShsmUtils::readProtectedData(Botan::byte * buff
         return Botan::SecureVector<Botan::byte>(0);
     }
 
-    DEBUG_MSGF(("After decryption: cipLen=%lu, %x %x %x %x %x %x %x", cipLen,
+    DEBUG_MSGF((TAG"After decryption: cipLen=%lu, %x %x %x %x %x %x %x", cipLen,
                outBuff[0],
                outBuff[1],
                outBuff[2],

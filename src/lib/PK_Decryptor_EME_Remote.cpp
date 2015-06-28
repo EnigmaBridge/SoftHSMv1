@@ -14,6 +14,7 @@
 #include "ShsmApiUtils.h"
 #include "ShsmNullRng.h"
 
+#define TAG "SHSMDecryptor: "
 PK_Decryptor_EME_Remote::PK_Decryptor_EME_Remote(ShsmPrivateKey * key,
                                                  const std::string &eme,
                                                  const SoftSlot *curSlot) : PK_Decryptor()
@@ -109,7 +110,7 @@ void PK_Decryptor_EME_Remote::testCallWithByte(Botan::byte plaintextByte, bool p
 
 Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Botan::byte byte[], size_t t, int * status) const {
     std::string origPlainStr = ShsmApiUtils::bytesToHex(byte, t);
-    DEBUG_MSGF(("Original size: %lu, Plaintext: [%s]", t, origPlainStr.c_str()));
+    DEBUG_MSGF((TAG"Original size: %lu, Plaintext: [%s]", t, origPlainStr.c_str()));
 
     // Generate JSON request for decryption.
     Botan::SecureVector<Botan::byte> errRet = Botan::SecureVector<Botan::byte>(0);
@@ -121,11 +122,11 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
                                                  this->connectionConfig->getMPort(),
                                                  json, &reqResult);
     if (reqResult != 0){
-        DEBUG_MSGF(("SHSM network request result failed, code=%d", reqResult));
+        DEBUG_MSGF((TAG"SHSM network request result failed, code=%d", reqResult));
         return errRet;
     }
 
-    DEBUG_MSGF(("Request [%s]", json.c_str()));
+    DEBUG_MSGF((TAG"Request [%s]", json.c_str()));
 
     // Parse response, extract result, return it.
     Json::Value root;   // 'root' will contain the root value after parsing.
@@ -133,7 +134,7 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     bool parsedSuccess = reader.parse(response, root, false);
     if(!parsedSuccess) {
         ERROR_MSG("decryptCall", "Could not read data from socket");
-        ERROR_MSGF(("Response: [%s]", response.c_str()));
+        ERROR_MSGF((TAG"Response: [%s]", response.c_str()));
         return errRet;
     }
 
@@ -141,7 +142,7 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     int resultCode = ShsmApiUtils::getStatus(root);
     if (resultCode != 9000){
         ERROR_MSG("decryptCall", "Result code is not 9000, cannot decrypt");
-        ERROR_MSGF(("Result code: %d, response: [%s]", resultCode, response.c_str()));
+        ERROR_MSGF((TAG"Result code: %d, response: [%s]", resultCode, response.c_str()));
         return errRet;
     }
 
@@ -161,31 +162,31 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     std::string decrytpedHexCoded = resultString.substr(4 + prefix,
                                                         pos == std::string::npos ? resultString.length() - 4 : pos - 4 - prefix);
 
-    DEBUG_MSGF(("Response, prefix: %lu, hexcoded AES ciphertext: [%s]", prefix, resultString.c_str()));
-    DEBUG_MSGF(("Response, without prefix/suffix [%s]", decrytpedHexCoded.c_str()));
+    DEBUG_MSGF((TAG"Response, prefix: %lu, hexcoded AES ciphertext: [%s]", prefix, resultString.c_str()));
+    DEBUG_MSGF((TAG"Response, without prefix/suffix [%s]", decrytpedHexCoded.c_str()));
 
     // Allocate memory buffer for decrypted block, convert from hexa string coding to bytes
     const size_t decHexLen = decrytpedHexCoded.length();
     const size_t bufferLen = decHexLen / 2;
     Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * bufferLen);
     size_t buffSize = ShsmApiUtils::hexToBytes(decrytpedHexCoded, buff, bufferLen);
-    DEBUG_MSGF(("To AES-decrypt, bufflen: %lu, buffsize: %lu", bufferLen, buffSize));
+    DEBUG_MSGF((TAG"To AES-decrypt, bufflen: %lu, buffsize: %lu", bufferLen, buffSize));
 
     std::string toDecryptStr = ShsmApiUtils::bytesToHex(buff, buffSize);
-    DEBUG_MSGF(("To AES-decrypt string: %s", toDecryptStr.c_str()));
+    DEBUG_MSGF((TAG"To AES-decrypt string: %s", toDecryptStr.c_str()));
 
     // AES-256-CBC-PKCS7 decrypt
     int decStatus = 0;
     Botan::SecureVector<Botan::byte> decData = ShsmUtils::readProtectedData(buff, buffSize, this->connectionConfig->getKey(), &decStatus);
 
     std::string decStr = ShsmApiUtils::bytesToHex(decData.begin(), decData.size());
-    DEBUG_MSGF(("RSA-decrypted string: %s", decStr.c_str()));
+    DEBUG_MSGF((TAG"RSA-decrypted string: %s", decStr.c_str()));
 
     // Adjust data size, padding / aux info may got stripped.
     buffSize = decData.size();
     free(buff);
 
-    DEBUG_MSGF(("Decrypted data length: %lu", decData.size()));
+    DEBUG_MSGF((TAG"Decrypted data length: %lu", decData.size()));
 
     // Remove PKCS#1 1.5 padding.
     if (this->eme == "EME-PKCS1-v1_5"){
@@ -204,7 +205,7 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     }
 
     Botan::byte * b = decData.begin();
-    DEBUG_MSGF(("Decrypted, returning buffer of size: %lu %x %x, size of decData: %lu", buffSize, b, b+1, decData.size()));
+    DEBUG_MSGF((TAG"Decrypted, returning buffer of size: %lu %x %x, size of decData: %lu", buffSize, b, b+1, decData.size()));
 
     // Allocate new secure vector and return it.
     return Botan::SecureVector<Botan::byte>(decData.begin(), buffSize);
@@ -226,6 +227,6 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::dec(const Botan::byte 
 //    Botan::SecureVector<Botan::byte> ret(0);
 
     Botan::byte * b = ret.begin();
-    DEBUG_MSGF(("dec(): Decrypted, returning buffer of size: %lu %x %x", ret.size(), b, b+1));
+    DEBUG_MSGF((TAG"dec(): Decrypted, returning buffer of size: %lu %x %x", ret.size(), b, b+1));
     return ret;
 }
