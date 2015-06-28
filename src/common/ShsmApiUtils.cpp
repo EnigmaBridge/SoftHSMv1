@@ -20,9 +20,22 @@
 #include <botan/types.h>
 #include <stdio.h>
 #include <algorithm>
+#include <cstdarg>
 
 // TODO: if win32, do differently.
 #include <sys/time.h>
+
+// Logging macro
+#define DEBUG_LOG(arg) debugLog arg
+static void debugLog(const char * fmt, ...){
+    char msgBuff[2048];
+    snprintf(msgBuff, 2048, "SoftHSM: %s", fmt);
+
+    va_list arg;
+    va_start(arg, fmt);
+    vfprintf(stderr, msgBuff, arg);
+    va_end(arg);
+}
 
 #define READ_STRING_BUFFER_SIZE 8192
 
@@ -51,13 +64,14 @@ int ShsmApiUtils::connectSocket(const char * hostname, int port, uint64_t readTi
     if (sockfd < 0) {
         return -1;
     }
-fprintf(stderr, "Resolving server name: %s\n", hostname);
+
+    DEBUG_LOG(("Resolving server name: %s\n", hostname));
     server = gethostbyname(hostname);
     if (server == NULL) {
         return -2;
     }
-fprintf(stderr, "Server name resolved\n");
 
+    DEBUG_LOG(("Server name resolved\n"));
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
 
@@ -69,20 +83,21 @@ fprintf(stderr, "Server name resolved\n");
 
     // Timeout set to the socket?
     if (ShsmApiUtils::setSocketTimeout(sockfd, SO_RCVTIMEO, readTimeoutMilli) < 0){
-        fprintf(stderr, "Cannot set socket read timeout...\n");
+        DEBUG_LOG(("Cannot set socket read timeout...\n"));
         return -40;
     }
 
     if (ShsmApiUtils::setSocketTimeout(sockfd, SO_SNDTIMEO, writeTimeoutMilli) < 0){
-        fprintf(stderr, "Cannot set socket write timeout...\n");
+        DEBUG_LOG(("Cannot set socket write timeout...\n"));
         return -41;
     }
 
-fprintf(stderr, "Socket connecting...\n");
+    DEBUG_LOG(("Socket connecting...\n"));
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){
         return -3;
     }
-fprintf(stderr, "Socket connected\n");
+
+    DEBUG_LOG(("Socket connected\n"));
     return sockfd;
 }
 
@@ -97,7 +112,7 @@ int ShsmApiUtils::writeToSocket(int sockfd, std::string buffToWrite) {
     ssize_t written=0;
     while(writtenTotal != clen) {
         written = write(sockfd, cstr + writtenTotal, clen - writtenTotal);
-        fprintf(stderr, "Socket written :%d\n", (int) written);
+        DEBUG_LOG(("Socket written :%d\n", (int) written));
         if (written < 0){
             return -1;
         }
@@ -114,7 +129,7 @@ std::string ShsmApiUtils::readStringFromSocket(int sockfd) {
 
     ssize_t bytesRead = 0;
     while((bytesRead = read(sockfd, buffer, READ_STRING_BUFFER_SIZE)) > 0){
-fprintf(stderr, "Socket read :%d\n", (int) bytesRead);
+        DEBUG_LOG(("Socket read :%d\n", (int) bytesRead));
         sb.write(buffer, bytesRead);
     }
 
@@ -122,20 +137,21 @@ fprintf(stderr, "Socket read :%d\n", (int) bytesRead);
 }
 
 std::string ShsmApiUtils::request(const char *hostname, int port, std::string request, int *status) {
-fprintf(stderr, "Going to create a socket to %s:%d\n", hostname, port);
     struct timeval tm1;
     struct timeval tm2;
     gettimeofday(&tm1, NULL);
+    DEBUG_LOG(("Going to create a socket to %s:%d\n", hostname, port));
 
     // Connect to a remote SHSM socket.
     int sockfd = ShsmApiUtils::connectSocket(hostname, port, 45000ul, 45000ul);
     if (sockfd < 0){
-fprintf(stderr, "Socket could not be opened\n");
+        DEBUG_LOG(("Socket could not be opened\n"));
         //DEBUG_MSG("decryptCall", "Socket could not be opened");
         *status = sockfd;
         return "";
     }
-fprintf(stderr, "Socket opened: %d\n", sockfd);
+
+    DEBUG_LOG(("Socket opened: %d\n", sockfd));
     // Send request over the socket.
     int res = ShsmApiUtils::writeToSocket(sockfd, request);
     if (res < 0){
@@ -143,15 +159,17 @@ fprintf(stderr, "Socket opened: %d\n", sockfd);
         *status = -20;
         return "";
     }
-fprintf(stderr, "Socket data written\n");
+
+    DEBUG_LOG(("Socket data written\n"));
+
     // Read JSON response from HSMS.
     std::string response = ShsmApiUtils::readStringFromSocket(sockfd);
-fprintf(stderr, "Socket data read [%s]\n", response.c_str());
+    DEBUG_LOG(("Socket data read [%s]\n", response.c_str()));
     // Closing opened socket. Refactor for performance.
     close(sockfd);
 
     gettimeofday(&tm2, NULL);
-    fprintf(stderr, "Time spent in the request call: %ld ms\n", ShsmApiUtils::diffTimeMilli(&tm1, &tm2));
+    DEBUG_LOG(("Time spent in the request call: %ld ms\n", ShsmApiUtils::diffTimeMilli(&tm1, &tm2)));
 
     *status = 0;
     return response;
