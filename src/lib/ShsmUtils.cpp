@@ -92,6 +92,7 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     }
 
     size_t cipLen = pipe.read(buff, (t + 64));
+    DEBUG_MSGF(("Encrypted message len: %lu", cipLen));
 
     // Add hex-encoded input data here.
     dataBuilder << ShsmApiUtils::bytesToHex(buff, cipLen);
@@ -180,15 +181,6 @@ ssize_t ShsmUtils::removePkcs15Padding(const Botan::byte *buff, size_t len, Bota
     }
 
     // Check the first byte.
-    DEBUG_MSGF(("RAW data: %x %x %x %x %x %x %x",
-               buff[0],
-               buff[1],
-               buff[2],
-               buff[3],
-               buff[4],
-               buff[5],
-               buff[6]
-               ));
     if (buff[0] != (Botan::byte)0x0){
         ERROR_MSG("removePkcs15Padding", "Padding data error, prefix is not 00");
         *status = -2;

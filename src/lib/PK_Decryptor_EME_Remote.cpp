@@ -133,7 +133,7 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     bool parsedSuccess = reader.parse(response, root, false);
     if(!parsedSuccess) {
         ERROR_MSG("decryptCall", "Could not read data from socket");
-        DEBUG_MSGF(("Response: [%s]", response.c_str()));
+        ERROR_MSGF(("Response: [%s]", response.c_str()));
         return errRet;
     }
 
@@ -141,7 +141,7 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     int resultCode = ShsmApiUtils::getStatus(root);
     if (resultCode != 9000){
         ERROR_MSG("decryptCall", "Result code is not 9000, cannot decrypt");
-        DEBUG_MSGF(("Result code: %d, response: [%s]", resultCode, response.c_str()));
+        ERROR_MSGF(("Result code: %d, response: [%s]", resultCode, response.c_str()));
         return errRet;
     }
 
