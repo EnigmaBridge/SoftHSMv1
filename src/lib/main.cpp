@@ -640,10 +640,6 @@ CK_RV C_CreateObject(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pTemplate, CK_
 }
 
 CK_RV C_CopyObject(CK_SESSION_HANDLE, CK_OBJECT_HANDLE obj, CK_ATTRIBUTE_PTR, CK_ULONG, CK_OBJECT_HANDLE_PTR) {
-  char errorMsg[1024];
-  snprintf(errorMsg, sizeof(errorMsg), "Calling, object: %lu", obj);
-
-  DEBUG_MSG("C_CopyObject", errorMsg);
   DEBUG_MSG("C_CopyObject", "The function is not implemented.");
 
   return CKR_FUNCTION_NOT_SUPPORTED;
@@ -1138,7 +1134,7 @@ CK_RV C_DecryptInit(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_
 
 CK_RV C_Decrypt(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pEncryptedData, CK_ULONG ulEncryptedDataLen, 
                 CK_BYTE_PTR pData, CK_ULONG_PTR pulDataLen) {
-  ERROR_MSG("C_Decrypt", "Calling");
+  DEBUG_MSG("C_Decrypt", "Calling");
 
   SoftHSMInternal *softHSM = state.get();
   CHECK_DEBUG_RETURN(softHSM == NULL, "C_Decrypt", "Library is not initialized",
