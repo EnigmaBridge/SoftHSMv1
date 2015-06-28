@@ -23,7 +23,25 @@
 
 #define READ_STRING_BUFFER_SIZE 8192
 
-int ShsmApiUtils::connectSocket(const char * hostname, int port) {
+
+int ShsmApiUtils::setSocketTimeout(int socket, int timeoutType, uint64_t timeoutValueMilli) {
+    if (timeoutValueMilli == 0){
+        return 0;
+    }
+
+    if (timeoutType != SO_SNDTIMEO && timeoutType != SO_RCVTIMEO){
+        return -100;
+    }
+
+    struct timeval timeout;
+    timeout.tv_sec = (long) (timeoutValueMilli / 1000);
+    timeout.tv_usec = 0;
+
+    int sockOptRes = setsockopt (socket, SOL_SOCKET, timeoutType, (char *)&timeout, sizeof(timeout));
+    return sockOptRes;
+}
+
+int ShsmApiUtils::connectSocket(const char * hostname, int port, uint64_t readTimeoutMilli, uint64_t writeTimeoutMilli) {
     int sockfd;
     struct sockaddr_in serv_addr;
     struct hostent *server;
@@ -46,6 +64,17 @@ fprintf(stderr, "Server name resolved\n");
           (size_t)server->h_length);
 
     serv_addr.sin_port = htons(port);
+
+    // Timeout set to the socket?
+    if (ShsmApiUtils::setSocketTimeout(sockfd, SO_RCVTIMEO, readTimeoutMilli) < 0){
+        fprintf(stderr, "Cannot set socket read timeout...\n");
+        return -40;
+    }
+
+    if (ShsmApiUtils::setSocketTimeout(sockfd, SO_SNDTIMEO, writeTimeoutMilli) < 0){
+        fprintf(stderr, "Cannot set socket write timeout...\n");
+        return -41;
+    }
 
 fprintf(stderr, "Socket connecting...\n");
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){
@@ -93,7 +122,7 @@ fprintf(stderr, "Socket read :%d\n", (int) bytesRead);
 std::string ShsmApiUtils::request(const char *hostname, int port, std::string request, int *status) {
 fprintf(stderr, "Going to create a socket to %s:%d\n", hostname, port);
     // Connect to a remote SHSM socket.
-    int sockfd = ShsmApiUtils::connectSocket(hostname, port);
+    int sockfd = ShsmApiUtils::connectSocket(hostname, port, 45000ul, 45000ul);
     if (sockfd < 0){
 fprintf(stderr, "Socket could not be opened\n");
         //DEBUG_MSG("decryptCall", "Socket could not be opened");

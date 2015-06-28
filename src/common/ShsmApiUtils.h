@@ -26,7 +26,12 @@ public:
     /**
     * Creates new socket and connects to it using configured connection parameters.
     */
-    static int connectSocket(const char * hostname, int port);
+    static int connectSocket(const char * hostname, int port, uint64_t readTimeoutMilli = 0, uint64_t writeTimeoutMilli = 0);
+
+    /**
+     * Sets socket timeout.
+     */
+    static int setSocketTimeout(int socket, int timeoutType, uint64_t timeoutValueMilli = 0);
 
     /**
      * Writes the whole string to the socket.
