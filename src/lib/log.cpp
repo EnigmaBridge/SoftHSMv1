@@ -36,6 +36,7 @@
 #ifndef WIN32
 #include <syslog.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 #else
 #include <windows.h>
@@ -100,11 +101,56 @@ void logDebug(const char *functionName, const char *text) {
 
 void logDebugF(const char *text, ...) {
 #ifndef WIN32
+  char msgBuff[2048];
+  snprintf(msgBuff, 2048, "SoftHSM: %s", text);
+
   va_list arg;
-  va_start(arg, text);
-  vsyslog(LOG_ERR, text, arg);
+  va_start(arg, msgBuff);
+  vsyslog(LOG_ERR, msgBuff, arg);
   va_end(arg);
 #else
-  logInfo(functionName, text);
+  #warning not implemented
+#endif
+}
+
+void logErrorF(const char *text, ...) {
+#ifndef WIN32
+  char msgBuff[2048];
+  snprintf(msgBuff, 2048, "SoftHSM: %s", text);
+
+  va_list arg;
+  va_start(arg, msgBuff);
+  vsyslog(LOG_ERR, msgBuff, arg);
+  va_end(arg);
+#else
+  #warning not implemented
+#endif
+}
+
+void logWarningF(const char *text, ...) {
+#ifndef WIN32
+  char msgBuff[2048];
+  snprintf(msgBuff, 2048, "SoftHSM: %s", text);
+
+  va_list arg;
+  va_start(arg, msgBuff);
+  vsyslog(LOG_WARNING, msgBuff, arg);
+  va_end(arg);
+#else
+  #warning not implemented
+#endif
+}
+
+void logInfoF(const char *text, ...) {
+#ifndef WIN32
+  char msgBuff[2048];
+  snprintf(msgBuff, 2048, "SoftHSM: %s", text);
+
+  va_list arg;
+  va_start(arg, msgBuff);
+  vsyslog(LOG_INFO, msgBuff, arg);
+  va_end(arg);
+#else
+  #warning not implemented
 #endif
 }

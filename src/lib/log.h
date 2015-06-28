@@ -37,20 +37,26 @@
 
 #if SOFTLOGLEVEL >= SOFTERROR
 #define ERROR_MSG(func, text) logError(func, text);
+#define ERROR_MSGF(arg) logErrorF arg
 #else
 #define ERROR_MSG(func, text)
+#define ERROR_MSGF(arg)
 #endif
 
 #if SOFTLOGLEVEL >= SOFTWARNING
 #define WARNING_MSG(func, text) logWarning(func, text);
+#define WARNING_MSGF(arg) logWarningF arg
 #else
 #define WARNING_MSG(func, text)
+#define WARNING_MSGF(arg)
 #endif
 
 #if SOFTLOGLEVEL >= SOFTINFO
 #define INFO_MSG(func, text) logInfo(func, text);
+#define INFO_MSGF(arg) logInfoF arg
 #else
 #define INFO_MSG(func, text)
+#define INFO_MSGF(arg)
 #endif
 
 #if SOFTLOGLEVEL >= SOFTDEBUG
@@ -71,6 +77,10 @@ void logError(const char *functionName, const char *text);
 void logWarning(const char *functionName, const char *text);
 void logInfo(const char *functionName, const char *text);
 void logDebug(const char *functionName, const char *text);
+
+void logErrorF(const char *text, ...);
+void logWarningF(const char *text, ...);
+void logInfoF(const char *text, ...);
 void logDebugF(const char *text, ...);
 
 #endif /* SOFTHSM_LOG_H */
