@@ -106,7 +106,7 @@ void logDebugF(const char *text, ...) {
 
   va_list arg;
   va_start(arg, msgBuff);
-  vsyslog(LOG_ERR, msgBuff, arg);
+  vsyslog(LOG_DEBUG, msgBuff, arg);
   va_end(arg);
 #else
   #warning not implemented
