@@ -60,4 +60,4 @@ set(SOURCE_FILES
     src/lib/util.h
     src/json/jsoncpp.cpp)
 
-add_executable(SoftHSMv1 ${SOURCE_FILES} src/lib/PK_Decryptor_EME_Remote.cpp src/lib/PK_Decryptor_EME_Remote.h src/lib/ShsmConnectionConfig.cpp src/lib/ShsmConnectionConfig.h src/lib/ShsmPrivateKey.cpp src/lib/ShsmPrivateKey.h src/lib/ShsmUtils.cpp src/lib/ShsmUtils.h src/common/ShsmApiUtils.cpp src/common/ShsmApiUtils.h)
+add_executable(SoftHSMv1 ${SOURCE_FILES} src/lib/PK_Decryptor_EME_Remote.cpp src/lib/PK_Decryptor_EME_Remote.h src/lib/ShsmConnectionConfig.cpp src/lib/ShsmConnectionConfig.h src/lib/ShsmPrivateKey.cpp src/lib/ShsmPrivateKey.h src/lib/ShsmUtils.cpp src/lib/ShsmUtils.h src/common/ShsmApiUtils.cpp src/common/ShsmApiUtils.h src/lib/ShsmNullRng.cpp src/lib/ShsmNullRng.h)
