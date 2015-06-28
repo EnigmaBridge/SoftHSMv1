@@ -32,24 +32,21 @@ PK_Decryptor_EME_Remote::PK_Decryptor_EME_Remote(ShsmPrivateKey * key,
     this->connectionConfig->setKey(ckey);
 }
 
-Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Botan::byte byte[], size_t t, int * status) const {
-
-    std::string origPlainStr = ShsmApiUtils::bytesToHex(byte, t);
-    DEBUG_MSGF(("Original size: %lu, Plaintext: [%s]", t, origPlainStr.c_str()));
-
-    // <test>
+void PK_Decryptor_EME_Remote::testCallWithByte(Botan::byte plaintextByte, bool pkcs15padding) const {
     const size_t preee = 1;
+    DEBUG_MSGF(("Testing dec() call with plaintext byte 0x%x, padding: %d", plaintextByte, pkcs15padding));
+
     // Prepare zero vector here.
     Botan::byte inpPlain[256];
     bzero(inpPlain, sizeof(Botan::byte) * 256);
-    memset(inpPlain, 0xff, sizeof(Botan::byte) * preee);
+    inpPlain[0] = plaintextByte;
 
     // Extract public key from the database.
     Botan::BigInt bigN = this->privKey->getBigN();
     Botan::BigInt bigE = this->privKey->getBigE();
     Botan::RSA_PublicKey rsaPub(bigN, bigE);
 
-    Botan::PK_Encryptor_EME rsaEncryptor(rsaPub, "Raw");//"EME-PKCS1-v1_5");
+    Botan::PK_Encryptor_EME rsaEncryptor(rsaPub, pkcs15padding ? "EME-PKCS1-v1_5" : "Raw");
     Botan::AutoSeeded_RNG autoRng;
     ShsmNullRng nullRng2;
     Botan::SecureVector<Botan::byte> toDec = rsaEncryptor.encrypt(inpPlain, preee, nullRng2);
@@ -71,12 +68,52 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     DEBUG_MSGF(("RSA encryption maximum input size: %lu", rsaEncryptor.maximum_input_size()));
     DEBUG_MSGF(("RSA Plaintext,  size: %lu, Plaintext=[%s]", preee, plainStr.c_str()));
     DEBUG_MSGF(("RSA Ciphertext, size: %lu, RSA_ENC(fff..f)=[%s]", toDec.size(), toDecStr.c_str()));
-    // </test>
+
+    // Do the request
+    int status = 0;
+    Botan::SecureVector<Botan::byte> secVect = this->decryptCall(toDec.begin(), toDec.size(), &status);
+
+    // Process the response, check with the input given.
+    Botan::byte * b = secVect.begin();
+    const size_t vsize = secVect.size();
+    if (vsize == 1){
+        if (b[0] == plaintextByte) {
+            INFO_MSGF(("RSA Decrypted plaintext of size 1 is correct!"));
+            return;
+        } else {
+            ERROR_MSGF(("RSA Decrypted plaintext of size 1 invalid. Got 0x%x expected 0x%x", b[0], plaintextByte));
+            return;
+        }
+    }
+
+    // Full text response.
+    if (vsize != 256){
+        ERROR_MSGF(("RSA Decrypted size invalid, size=%lu", vsize));
+        return;
+    }
+
+    for(int i=0; i<255; i++){
+        if (b[i] != 0x0){
+            ERROR_MSG("testCall", "Invalid plaintext body");
+            return;
+        }
+    }
+
+    if (b[255] != plaintextByte){
+        ERROR_MSG("testCall", "Invalid plaintext body - missing the plaintext byte");
+        return;
+    } else {
+        INFO_MSGF(("Everything is correct!"));
+    }
+}
+
+Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Botan::byte byte[], size_t t, int * status) const {
+    std::string origPlainStr = ShsmApiUtils::bytesToHex(byte, t);
+    DEBUG_MSGF(("Original size: %lu, Plaintext: [%s]", t, origPlainStr.c_str()));
 
     // Generate JSON request for decryption.
     Botan::SecureVector<Botan::byte> errRet = Botan::SecureVector<Botan::byte>(0);
-    //std::string json = ShsmUtils::getRequestDecrypt(this->privKey, this->connectionConfig->getKey(), byte, t, "");
-    std::string json = ShsmUtils::getRequestDecrypt(this->privKey, this->connectionConfig->getKey(), toDec.begin(), toDec.size(), "");
+    std::string json = ShsmUtils::getRequestDecrypt(this->privKey, this->connectionConfig->getKey(), byte, t, "");
 
     // Perform the request.
     int reqResult = 0;
@@ -174,12 +211,21 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
 }
 
 Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::dec(const Botan::byte byte[], size_t t) const {
+    // <test>
+//    this->testCallWithByte(0x0, false);
+//    this->testCallWithByte(0x1, false);
+//    this->testCallWithByte(0x2, false);
+//    this->testCallWithByte(0x0, true);
+//    this->testCallWithByte(0x1, true);
+//    this->testCallWithByte(0x2, true);
+    // </test>
+
     int status = 0;
-//    Botan::SecureVector<Botan::byte> ret(byte, t);
     Botan::SecureVector<Botan::byte> ret = this->decryptCall(byte, t, &status);
+//    Botan::SecureVector<Botan::byte> ret(byte, t);
 //    Botan::SecureVector<Botan::byte> ret(0);
 
     Botan::byte * b = ret.begin();
-    DEBUG_MSGF(("Decrypted, returning buffer of size: %lu %x %x", ret.size(), b, b+1));
+    DEBUG_MSGF(("dec(): Decrypted, returning buffer of size: %lu %x %x", ret.size(), b, b+1));
     return ret;
 }

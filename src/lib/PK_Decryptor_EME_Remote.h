@@ -89,6 +89,11 @@ private:
      */
     Botan::SecureVector<Botan::byte> decryptCall(const Botan::byte byte[], size_t t, int * status) const;
 
+    /**
+     * Tests the whole API with RSA_ENC(plaintextByte) if we obtain the same value after RSA decryption.
+     */
+    void testCallWithByte(Botan::byte plaintextByte, bool pkcs15padding) const;
+
 };
 
 
