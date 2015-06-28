@@ -942,6 +942,14 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
     return 1;
   }
 
+  // <temporary>
+//  std::string pubKey = data["publickey"].asString();
+//  const size_t len = pubKey.length() / 2;
+//
+//  Botan::byte * pubBuff = (Botan::byte *) malloc(sizeof(Botan::byte) * len);
+//  const size_t pubLen = ShsmApiUtils::hexToBytes(pubKey, pubBuff, len);
+  // </temporary>
+
   // Prepare public key relevant data (modulus, exponent).
   Botan::IF_Scheme_PublicKey *ifKeyPub = dynamic_cast<Botan::IF_Scheme_PublicKey*>(pkey);
   key_material_t *keyMat = (key_material_t *)malloc(sizeof(key_material_t));
@@ -952,6 +960,9 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
   keyMat->bigN = (CK_VOID_PTR)malloc(keyMat->sizeN);
   ifKeyPub->get_e().binary_encode((Botan::byte *)keyMat->bigE);
   ifKeyPub->get_n().binary_encode((Botan::byte *)keyMat->bigN);
+
+//  keyMat->sizeN = 256;
+//  keyMat->bigN = pubBuff + 9;
 
   // Prepare certificate data.
   Botan::MemoryVector<Botan::byte> crtBer = x509Crt->BER_encode();
