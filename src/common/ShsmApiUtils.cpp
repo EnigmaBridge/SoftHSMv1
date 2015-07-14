@@ -291,12 +291,12 @@ std::string ShsmApiUtils::getRequestForCertGen(long bitsize, const char *alg, co
 
     Json::Value jData;
     jData["dn"] = dn;
-    jData["size"] = (int) bitsize;
-    jData["algorithm"] = alg;
+    // Size and algorithm not supported by now. Specified by "type". TODO: fix.
+    //jData["size"] = (int) bitsize;
+    //jData["algorithm"] = alg;
 
     // Add data for cert gen.
-    //jReq["data"] = jData;
-    // Data fiels is not supported by now. TODO: fix.
+    jReq["data"] = jData;
 
     // Build string request body.
     Json::FastWriter jWriter;
