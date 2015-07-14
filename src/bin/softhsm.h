@@ -77,7 +77,7 @@ void usage();
 int initToken(char *slot, char *label, char *soPIN, char *userPIN);
 int showSlots();
 int getShsmPubKey(char *hostname, int port, char *crtPath);
-int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int port, long bitsize, char *algname, char *dn, char *label, char *objectID, char *crtPath, char *certChainPath);
+int certGenShsm(char *slot, char *userPIN, char *hostname, int port, long bitsize, const char *algname, const char *dn, char *label, const char *objectID, const char *crtPath, const char *certChainPath);
 int importKeyPair(char *filePath, char *filePIN, char *slot, char *userPIN, char *objectLabel, char *objectID, int forceExec);
 int exportKeyPair(char *filePath, char *filePIN, char *slot, char *userPIN, char *objectID);
 int optimize(char *slot, char *userPIN);
@@ -86,7 +86,7 @@ int trustObject(char *boolTrusted, char *slot, char *soPIN, char *type, char *la
 // Support functions
 
 /// Hex
-char* hexStrToBin(char *objectID, size_t idLength, size_t *newLen);
+char* hexStrToBin(const char *objectID, size_t idLength, size_t *newLen);
 int hexdigit_to_int(char ch);
 
 /// Key material

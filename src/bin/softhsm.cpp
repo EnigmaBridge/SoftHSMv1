@@ -240,7 +240,7 @@ int main(int argc, char *argv[]) {
   char *hostname = NULL;
   int port = 11112;
   long bitsize = 2048;
-  char *algname = "RSA";
+  const char *algname = "RSA";
   char *dn = NULL;
   char *crtChainPath = NULL;
   char *crtPath = NULL;
@@ -455,7 +455,7 @@ int main(int argc, char *argv[]) {
 
   // Certgen option here....
   if (doCrtGen){
-    status = certGenShsm(filePIN, slot, userPIN, hostname, port, bitsize, algname, dn, label, objectID, crtPath, crtChainPath);
+    status = certGenShsm(slot, userPIN, hostname, port, bitsize, algname, dn, label, objectID, crtPath, crtChainPath);
   }
 
   if (doGetPubKey){
@@ -790,8 +790,8 @@ int getShsmPubKey(char *hostname, int port, char *crtPath){
 
 // CertGen in SHSM.
 
-int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int port, long bitsize, char *algname, char *dn,
-                char *label, char *objectID, char *crtPath, char *certChainPath)
+int certGenShsm(char *slot, char *userPIN, char *hostname, int port, long bitsize, const char *algname, const char *dn,
+                char *label, const char *objectID, const char *crtPath, const char *certChainPath)
 {
   if(slot == NULL) {
     fprintf(stderr, "Error: A slot number must be supplied. Use --slot <number>\n");
@@ -805,11 +805,6 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
 
   if(userPIN == NULL) {
     fprintf(stderr, "Error: An user PIN must be supplied. Use --pin <PIN>\n");
-    return 1;
-  }
-
-  if (crtPath == NULL){
-    fprintf(stderr, "Error: certificate file cannot be empty. Use --crtfile PATH\n");
     return 1;
   }
 
@@ -901,9 +896,13 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
   // Write certificate to a given file.
   std::string crt = data["certificate"].asString();
   std::string crtPEM = ShsmApiUtils::fixNewLinesInResponse(crt);
-  std::ofstream crtFile(crtPath);
-  crtFile << crtPEM;
-  crtFile.close();
+
+  // Write resulting certificate to a file.
+  if (crtPath != NULL) {
+    std::ofstream crtFile(crtPath);
+    crtFile << crtPEM;
+    crtFile.close();
+  }
 
   // CA chain if path is specified
   if (certChainPath != NULL){
@@ -1043,7 +1042,7 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
           { CKA_VALUE,             crtBer.begin(),       crtBer.size() },
   };
 
-  fprintf(stderr, "Going to import private key with handle: %d. SubjectDn size: %ld and %ld, certBer %ld, serial %ld\n",
+  fprintf(stderr, "Going to import private key with handle: %ld. SubjectDn size: %ld and %ld, certBer %ld, serial %ld\n",
           privKeyHandle, subjectDn.size(), issuerDn.size(), crtBer.size(), serial.size());
 
   std::string modulusStr = ShsmApiUtils::bytesToHex((Botan::byte *)keyMat->bigN, keyMat->sizeN);
@@ -1077,7 +1076,7 @@ int certGenShsm(char *filePIN, char *slot, char *userPIN, char *hostname, int po
     return 1;
   }
 
-  printf("The key pair has been imported to the token in slot %lu. Key handle: %d. Certificate written to: %s. h1: %lu, h2: %lu, h3: %lu\n",
+  printf("The key pair has been imported to the token in slot %lu. Key handle: %ld. Certificate written to: %s. h1: %lu, h2: %lu, h3: %lu\n",
          slotID, privKeyHandle, crtPath, hKey1, hKey2, hKey3);
 
   return 0;
@@ -1525,7 +1524,7 @@ int removeSessionObjs(char *dbPath) {
 
 // Convert a char array of hexadecimal characters into a binary representation
 
-char* hexStrToBin(char *objectID, size_t idLength, size_t *newLen) {
+char* hexStrToBin(const char *objectID, size_t idLength, size_t *newLen) {
   char *bytes = NULL;
 
   if(idLength < 2 || idLength % 2 != 0) {
