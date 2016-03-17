@@ -270,7 +270,7 @@ char ShsmApiUtils::intToHexDigit(int c) {
 }
 
 bool ShsmApiUtils::generateNonceBytes(Botan::byte * buff, size_t len) {
-    prng.randomize(buff, len);
+    ShsmApiUtils::prng.randomize(buff, len);
     return true;
 }
 
@@ -280,7 +280,7 @@ std::string ShsmApiUtils::generateNonce(size_t len) {
 
     std::stringstream res;
     for(size_t i = 0; i < len; i++){
-        res << alphabet[prng.next_byte() % (alphabetLen - 1)];
+        res << alphabet[ShsmApiUtils::prng.next_byte() % (alphabetLen - 1)];
     }
 
     return res.str();
