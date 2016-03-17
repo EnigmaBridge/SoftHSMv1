@@ -25,6 +25,9 @@
 // TODO: if win32, do differently.
 #include <sys/time.h>
 
+// PRNG, auto seeded, static.
+Botan::AutoSeeded_RNG ShsmApiUtils::prng;
+
 // Logging macro
 #define DEBUG_LOG(arg) debugLog arg
 static void debugLog(const char * fmt, ...){
