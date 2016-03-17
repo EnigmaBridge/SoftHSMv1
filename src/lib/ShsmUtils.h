@@ -39,6 +39,10 @@ public:
      */
     static ssize_t removePkcs15Padding(const Botan::byte * buff, size_t len, Botan::byte * out, size_t maxLen, int * status);
 
+    /**
+     * Demangles nonce in the processData response to the original one.
+     */
+    static void demangleNonce(Botan::byte *buff, size_t len);
 };
 
 

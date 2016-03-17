@@ -258,3 +258,10 @@ ssize_t ShsmUtils::removePkcs15Padding(const Botan::byte *buff, size_t len, Bota
     *status = 0;
     return dataLen;
 }
+
+void ShsmUtils::demangleNonce(Botan::byte *buff, size_t len) {
+    size_t idx;
+    for(idx = 0; idx < len; idx++){
+        buff[idx] -= 0x1;
+    }
+}
