@@ -269,13 +269,18 @@ char ShsmApiUtils::intToHexDigit(int c) {
     return (char)((c <= 9) ? ('0' + c) : ('a' + (c - 10)));
 }
 
+bool ShsmApiUtils::generateNonceBytes(Botan::byte * buff, size_t len) {
+    prng.randomize(buff, len);
+    return true;
+}
+
 std::string ShsmApiUtils::generateNonce(size_t len) {
-    static const char * alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
+    static const char * alphabet = "0123456789abcdef";
     static const size_t alphabetLen = strlen(alphabet);
 
     std::stringstream res;
     for(size_t i = 0; i < len; i++){
-        res << alphabet[rand() % (alphabetLen - 1)];
+        res << alphabet[prng.next_byte() % (alphabetLen - 1)];
     }
 
     return res.str();

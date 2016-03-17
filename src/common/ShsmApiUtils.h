@@ -8,6 +8,7 @@
 #include <botan/types.h>
 #include <string>
 #include <json/json.h>
+#include <botan/auto_rng.h>
 
 // Boolean attribute for private keys, if set to true, the private key is stored in SHSM.
 #define CKA_SHSM_KEY (CKA_VENDOR_DEFINED + 0x100)
@@ -21,6 +22,8 @@
 #define SHSM_INVALID_KEY_HANDLE -1l
 
 class ShsmApiUtils {
+private:
+    static Botan::AutoSeeded_RNG prng;
 
 public:
     /**
@@ -68,6 +71,11 @@ public:
      * Converts half-byte to a hex digit.
      */
     static char intToHexDigit(int c);
+
+    /**
+     * Generates random nonce into the given buffer of given length in bytes.
+     */
+    static bool generateNonceBytes(Botan::byte * buff, size_t len);
 
     /**
      * Generates random nonce string.
