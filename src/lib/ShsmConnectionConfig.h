@@ -23,6 +23,11 @@ protected:
      */
     std::string key;
 
+    /**
+     * MAC key to provide authenticity.
+     */
+    std::string macKey;
+
     //RSAPublicKey m_shsmPubKey = null;
 
     /**
@@ -69,6 +74,14 @@ public:
 
     void setKey(const std::string &key) {
         ShsmConnectionConfig::key = key;
+    }
+
+    const std::string &getMacKey() const {
+        return macKey;
+    }
+
+    void setMacKey(const std::string &key) {
+        ShsmConnectionConfig::macKey = key;
     }
 
     Botan::RSA_PublicKey *getShsmPubKey() const {
