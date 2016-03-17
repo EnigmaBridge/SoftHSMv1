@@ -21,6 +21,7 @@ PK_Decryptor_EME_Remote::PK_Decryptor_EME_Remote(ShsmPrivateKey * key,
 {
     std::string host = curSlot->getHost();
     std::string ckey = curSlot->getKey();
+    std::string cMackey = curSlot->getMacKey();
     int port = curSlot->getPort();
 
     if (host.empty()){
@@ -31,6 +32,7 @@ PK_Decryptor_EME_Remote::PK_Decryptor_EME_Remote(ShsmPrivateKey * key,
     this->privKey = key;
     this->connectionConfig = new ShsmConnectionConfig(host, port);
     this->connectionConfig->setKey(ckey);
+    this->connectionConfig->setMacKey(cMackey);
 }
 
 void PK_Decryptor_EME_Remote::testCallWithByte(Botan::byte plaintextByte, bool pkcs15padding) const {
@@ -114,7 +116,10 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
 
     // Generate JSON request for decryption.
     Botan::SecureVector<Botan::byte> errRet = Botan::SecureVector<Botan::byte>(0);
-    std::string json = ShsmUtils::getRequestDecrypt(this->privKey, this->connectionConfig->getKey(), byte, t, "");
+    std::string json = ShsmUtils::getRequestDecrypt(this->privKey,
+                                                    this->connectionConfig->getKey(),
+                                                    this->connectionConfig->getMacKey(),
+                                                    byte, t);
 
     // Perform the request.
     int reqResult = 0;
@@ -139,10 +144,10 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     }
 
     // Check status code.
-    int resultCode = ShsmApiUtils::getStatus(root);
-    if (resultCode != 9000){
-        ERROR_MSG("decryptCall", "Result code is not 9000, cannot decrypt");
-        ERROR_MSGF((TAG"Result code: %d, response: [%s]", resultCode, response.c_str()));
+    unsigned int resultCode = ShsmApiUtils::getStatus(root);
+    if (resultCode != 0x9000u){
+        ERROR_MSG("decryptCall", "Result code is not 0x9000, cannot decrypt");
+        ERROR_MSGF((TAG"Result code: %x, response: [%s]", resultCode, response.c_str()));
         return errRet;
     }
 
@@ -154,22 +159,23 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
         return errRet;
     }
 
-    // Read prefix, first 4 bytes. unsigned long?
-    unsigned long prefix = ShsmApiUtils::getLongFromString(resultString.c_str());
+    // Read prefix, first 4 characters (2 bytes). unsigned integer.
+    // Denotes number of bytes of plain data. Usually 0.
+    unsigned long prefix = ShsmApiUtils::getInt32FromHexString(resultString.c_str());
 
     // Strip suffix of the key beginning with "Packet"
     size_t pos = resultString.rfind("Packet", std::string::npos);
-    std::string decrytpedHexCoded = resultString.substr(4 + prefix,
-                                                        pos == std::string::npos ? resultString.length() - 4 : pos - 4 - prefix);
+    std::string decryptedHexCoded = resultString.substr(4 + prefix*2,
+                                                        pos == std::string::npos ? resultString.length() - 4 : pos - 4 - prefix*2);
 
     DEBUG_MSGF((TAG"Response, prefix: %lu, hexcoded AES ciphertext: [%s]", prefix, resultString.c_str()));
-    DEBUG_MSGF((TAG"Response, without prefix/suffix [%s]", decrytpedHexCoded.c_str()));
+    DEBUG_MSGF((TAG"Response, without prefix/suffix [%s]", decryptedHexCoded.c_str()));
 
     // Allocate memory buffer for decrypted block, convert from hexa string coding to bytes
-    const size_t decHexLen = decrytpedHexCoded.length();
+    const size_t decHexLen = decryptedHexCoded.length();
     const size_t bufferLen = decHexLen / 2;
     Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * bufferLen);
-    size_t buffSize = ShsmApiUtils::hexToBytes(decrytpedHexCoded, buff, bufferLen);
+    size_t buffSize = ShsmApiUtils::hexToBytes(decryptedHexCoded, buff, bufferLen);
     DEBUG_MSGF((TAG"To AES-decrypt, bufflen: %lu, buffsize: %lu", bufferLen, buffSize));
 
     std::string toDecryptStr = ShsmApiUtils::bytesToHex(buff, buffSize);
@@ -177,7 +183,12 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
 
     // AES-256-CBC-PKCS7 decrypt
     int decStatus = 0;
-    Botan::SecureVector<Botan::byte> decData = ShsmUtils::readProtectedData(buff, buffSize, this->connectionConfig->getKey(), &decStatus);
+    Botan::SecureVector<Botan::byte> decData = ShsmUtils::readProtectedData(
+            buff,
+            buffSize,
+            this->connectionConfig->getKey(),
+            this->connectionConfig->getMacKey(),
+            &decStatus);
 
     std::string decStr = ShsmApiUtils::bytesToHex(decData.begin(), decData.size());
     DEBUG_MSGF((TAG"RSA-decrypted string: %s", decStr.c_str()));

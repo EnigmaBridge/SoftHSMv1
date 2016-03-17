@@ -758,9 +758,9 @@ int getShsmPubKey(char *hostname, int port, char *crtPath){
   }
 
   // Check status code.
-  int resStatus = ShsmApiUtils::getStatus(root);
-  if (resStatus != 9000){
-    fprintf(stderr, "Result code is not 9000, cannot decrypt. Code: %d\n", resStatus);
+  unsigned int resStatus = ShsmApiUtils::getStatus(root);
+  if (resStatus != 0x9000u){
+    fprintf(stderr, "Result code is not 0x9000, cannot decrypt. Code: %x\n", resStatus);
     return 1;
   }
 
@@ -884,9 +884,9 @@ int certGenShsm(char *slot, char *userPIN, char *hostname, int port, long bitsiz
   }
 
   // Check status code.
-  Json::Int resStatus = ShsmApiUtils::getStatus(root);
-  if (resStatus != 9000){
-    fprintf(stderr, "Result code is not 9000, cannot decrypt. Code: %d", (int) resStatus);
+  Json::UInt resStatus = ShsmApiUtils::getStatus(root);
+  if (resStatus != 0x9000u){
+    fprintf(stderr, "Result code is not 0x9000, cannot decrypt. Code: %x", resStatus);
     return 1;
   }
 

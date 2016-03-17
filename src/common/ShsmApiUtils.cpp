@@ -349,9 +349,63 @@ int ShsmApiUtils::getIntFromJsonField(Json::Value &root, int * success) {
     return -2;
 }
 
-int ShsmApiUtils::getStatus(Json::Value &root) {
+unsigned int ShsmApiUtils::getUIntFromJsonField(Json::Value &root, int * success) {
+    if (root.isNull()){
+        if (success != NULL){
+            *success = -1;
+        }
+        return 0;
+    }
+
+    if (success != NULL){
+        *success = 0;
+    }
+
+    if (root.isIntegral()){
+        return root.asUInt();
+    }
+
+    if (root.isString()){
+        return (unsigned)atoi(root.asCString());
+    }
+
+    if (success != NULL){
+        *success = -2;
+    }
+
+    return 0;
+}
+
+unsigned int ShsmApiUtils::getHexUint32FromJsonField(Json::Value &root, int *success) {
+    if (root.isNull()){
+        if (success != NULL){
+            *success = -1;
+        }
+        return 0;
+    }
+
+    if (success != NULL){
+        *success = 0;
+    }
+
+    if (root.isIntegral()){
+        return root.asUInt();
+    }
+
+    if (root.isString()){
+        return (unsigned int) ShsmApiUtils::getInt32FromHexString(root.asCString());
+    }
+
+    if (success != NULL){
+        *success = -2;
+    }
+
+    return 0;
+}
+
+unsigned int ShsmApiUtils::getStatus(Json::Value &root) {
     Json::Value status = root["status"];
-    return ShsmApiUtils::getIntFromJsonField(status, NULL);
+    return ShsmApiUtils::getHexUint32FromJsonField(status, NULL);
 }
 
 ssize_t ShsmApiUtils::getJsonByteArraySize(std::string &input) {
@@ -400,7 +454,7 @@ std::string ShsmApiUtils::removeWhiteSpace(std::string &input) {
     return copy;
 }
 
-unsigned long ShsmApiUtils::getLongFromString(const char *buff) {
+unsigned long ShsmApiUtils::getInt32FromHexString(const char *buff) {
     unsigned long data = (unsigned long) ShsmApiUtils::hexdigitToInt(buff[3]);
     data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[2])) << 8;
     data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[1])) << 16;
@@ -408,7 +462,7 @@ unsigned long ShsmApiUtils::getLongFromString(const char *buff) {
     return data;
 }
 
-void ShsmApiUtils::writeLongToString(unsigned long id, unsigned char *buff) {
+void ShsmApiUtils::writeInt32ToHexString(unsigned long id, unsigned char *buff) {
     buff[0] = 0;
     buff[1] = 0;
     buff[2] = 0;
@@ -424,7 +478,7 @@ void ShsmApiUtils::writeLongToString(unsigned long id, unsigned char *buff) {
     buff[0] |= (unsigned char) ShsmApiUtils::intToHexDigit( (int) ((id >> 28) & 0xf) );
 }
 
-unsigned long ShsmApiUtils::getLongFromBuff(const char *buff) {
+unsigned long ShsmApiUtils::getInt32FromBuff(const char *buff) {
     unsigned long data = (unsigned long) ((unsigned char) buff[3]) & 0xff;
     data |= ((unsigned long) ((unsigned char) buff[2]) & 0xff) << 8;
     data |= ((unsigned long) ((unsigned char) buff[1]) & 0xff) << 16;
@@ -432,7 +486,7 @@ unsigned long ShsmApiUtils::getLongFromBuff(const char *buff) {
     return data;
 }
 
-void ShsmApiUtils::writeLongToBuff(unsigned long id, unsigned char *buff) {
+void ShsmApiUtils::writeInt32ToBuff(unsigned long id, unsigned char *buff) {
     buff[3] = (unsigned char) (id & 0xff);
     buff[2] = (unsigned char) ((id >> 8 ) & 0xff);
     buff[1] = (unsigned char) ((id >> 16) & 0xff);

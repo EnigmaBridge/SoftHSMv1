@@ -98,9 +98,19 @@ public:
     static int getIntFromJsonField(Json::Value &root, int * success);
 
     /**
+     * Converts given field to unsigned integer. It may be string-encoded integer or integer.
+     */
+    static unsigned int getUIntFromJsonField(Json::Value &root, int * success);
+
+    /**
+     * Gets hexcoded uint 32 from the JSON field.
+     */
+    static unsigned int getHexUint32FromJsonField(Json::Value &root, int *success);
+
+    /**
      * Extracts status value as an integer from the JSON response.
      */
-    static int getStatus(Json::Value &root);
+    static unsigned int getStatus(Json::Value &root);
 
     /**
      * Computes size of the array needed to hold decoded hex-coded byte array.
@@ -121,23 +131,23 @@ public:
      * Reads 4 bytes long representation, converts to unsigned long.
      * Buff has to be at least 4 bytes long.
      */
-    static unsigned long getLongFromString(const char * buff);
+    static unsigned long getInt32FromHexString(const char *buff);
 
     /**
      * Writes long to the string on the given pointer. Has to have at least 4 B.
      */
-    static void writeLongToString(unsigned long id, unsigned char * buff);
+    static void writeInt32ToHexString(unsigned long id, unsigned char *buff);
 
     /**
      * Reads 4 bytes long representation, converts to unsigned long.
      * Buff has to be at least 4 bytes long.
      */
-    static unsigned long getLongFromBuff(const char * buff);
+    static unsigned long getInt32FromBuff(const char *buff);
 
     /**
      * Writes long to the string on the given pointer. Has to have at least 4 B.
      */
-    static void writeLongToBuff(unsigned long id, unsigned char * buff);
+    static void writeInt32ToBuff(unsigned long id, unsigned char *buff);
 
     /**
      * Loads current time.

@@ -25,12 +25,12 @@ public:
     /**
      * Returns request string for decryption query.
      */
-    static std::string getRequestDecrypt(ShsmPrivateKey * privKey, std::string key, const Botan::byte byte[], size_t t, std::string nonce);
+    static std::string getRequestDecrypt(ShsmPrivateKey * privKey, std::string key, std::string macKey, const Botan::byte byte[], size_t t);
 
     /**
      * Process ProcessData response, unprotects data, removes rubbish.
      */
-    static Botan::SecureVector<Botan::byte> readProtectedData(Botan::byte * buff, size_t size, std::string key, int * status);
+    static Botan::SecureVector<Botan::byte> readProtectedData(Botan::byte * buff, size_t size, std::string key, std::string macKey, int * status);
 
     /**
      * Removes PKCS1.5 padding from the input buffer and places output to the output buffer.

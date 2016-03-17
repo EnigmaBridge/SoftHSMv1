@@ -20,6 +20,8 @@
 #include <botan/engine.h>
 #include <botan/lookup.h>
 #define TAG "ShsmUtils: "
+#define MACTAGLEN 16
+#define FRESHNESS_NONCE_LEN 8
 
 CK_BBOOL ShsmUtils::isShsmKey(SoftDatabase *db, CK_OBJECT_HANDLE hKey) {
     return db->getBooleanAttribute(hKey, CKA_SHSM_KEY, CK_FALSE);
@@ -40,12 +42,18 @@ SHSM_KEY_HANDLE ShsmUtils::getShsmKeyHandle(SoftDatabase *db, CK_OBJECT_HANDLE h
     return shsmHandle;
 }
 
-std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string key, const Botan::byte byte[], size_t t, std::string nonce) {
+std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string key, std::string macKey, const Botan::byte byte[], size_t t) {
     // Generate JSON request here.
+    // 8B freshness nonce first.
+    Botan::byte nonceBytes[FRESHNESS_NONCE_LEN];
+    ShsmApiUtils::generateNonceBytes(nonceBytes, FRESHNESS_NONCE_LEN);
+    std::string finalNonce = ShsmApiUtils::bytesToHex(nonceBytes, FRESHNESS_NONCE_LEN);
+
+    // Request body
     Json::Value jReq;
     jReq["function"] = "ProcessData";
     jReq["version"] = "1.0";
-    jReq["nonce"] = !nonce.empty() ? nonce : ShsmApiUtils::generateNonce(16);
+    jReq["nonce"] = finalNonce;
     const int keyId = (int) privKey->getKeyId();
 
     // Object id, long to string.
@@ -54,10 +62,12 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     jReq["objectid"] = buf;
 
     std::ostringstream dataBuilder;
+    // TODO: correct packet header, according to the key type.
+    // _0000 is the length of plain data, 2B.
     dataBuilder << "Packet0_RSA2048_0000";
 
-    // AES-256-CBC encrypt data for decryption.
-    // IV is null for now, TODO: force others to change this to AES-GCM with correct IV.
+    // AES-256-CBC-PKCS7 encrypt data for decryption.
+    // IV is null for now, freshness nonce is used as IV, some kind of.
     Botan::byte iv[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     Botan::byte encKey[32];
     size_t keySize = ShsmApiUtils::hexToBytes(key, encKey, 32);
@@ -66,11 +76,28 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
         ERROR_MSG("getRequestDecrypt", "AES key size is invalid");
     }
 
+    // Prepare AES-CBC-MAC key
+    Botan::byte macKeyBuff[32];
+    size_t macKeySize = ShsmApiUtils::hexToBytes(macKey, macKeyBuff, 32);
+    Botan::SecureVector<Botan::byte> tMacVector(macKeyBuff, 32);
+    if (macKeySize != 32){
+        ERROR_MSG("getRequestDecrypt", "AES MAC key size is invalid");
+    }
+
     Botan::SymmetricKey aesKey(tSecVector);
+    Botan::SymmetricKey aesMacKey(tMacVector);
     Botan::InitializationVector aesIv(iv, 16);
 
-    // Encryption & Encode
-    Botan::Pipe pipe(Botan::get_cipher("AES-256/CBC/PKCS7", aesKey, aesIv, Botan::ENCRYPTION));
+    // Encryption & MAC encrypted ciphertext
+    Botan::Pipe pipe(
+            Botan::get_cipher("AES-256/CBC/PKCS7", aesKey, aesIv, Botan::ENCRYPTION),
+            new Botan::Fork(
+                    // output from encryption goes here, messageId=0
+                    0,
+                    // output of encryption goes to MAC, messageId=1.
+                    new Botan::MAC_Filter("CBC_MAC(AES-256)", aesMacKey)
+            ));
+
     pipe.start_msg();
 
     std::string toDecryptStr = ShsmApiUtils::bytesToHex(byte, t);
@@ -78,25 +105,31 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
 
     // Write header of form 0x1f | <UOID-4B>
     Botan::byte dataHeader[5] = {0x1f, 0x0, 0x0, 0x0, 0x0};
-    ShsmApiUtils::writeLongToBuff((unsigned long)keyId, dataHeader + 1);
+    ShsmApiUtils::writeInt32ToBuff((unsigned long) keyId, dataHeader + 1);
     pipe.write(dataHeader, 5);
+    pipe.write(nonceBytes, FRESHNESS_NONCE_LEN); // freshness nonce 8B
     pipe.write(byte, t);
     pipe.end_msg();
 
     DEBUG_MSGF((TAG"DataHeader: %x %x %x %x %x keyId: %lu", dataHeader[0], dataHeader[1], dataHeader[2], dataHeader[3], dataHeader[4], (unsigned long)keyId));
 
     // Read the output.
-    Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * (t + 64));
+    Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * (t + 128));
     if (buff == NULL_PTR){
         ERROR_MSG("getRequestDecrypt", "Could not allocate enough memory for encryption operation");
         return "";
     }
 
-    size_t cipLen = pipe.read(buff, (t + 64));
+    // Read encrypted data from the pipe.
+    size_t cipLen = pipe.read(buff, (t + 128), 0);
     DEBUG_MSGF((TAG"Encrypted message len: %lu", cipLen));
 
+    // Read MAC on encrypted data from the pipe
+    size_t macLen = pipe.read(buff+cipLen, (t + 128 - cipLen), 1);
+    DEBUG_MSGF((TAG"MAC message len: %lu", macLen));
+
     // Add hex-encoded input data here.
-    dataBuilder << ShsmApiUtils::bytesToHex(buff, cipLen);
+    dataBuilder << ShsmApiUtils::bytesToHex(buff, cipLen+macLen);
 
     // Deallocate temporary buffer.
     free(buff);
@@ -110,23 +143,61 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     return json;
 }
 
-Botan::SecureVector<Botan::byte> ShsmUtils::readProtectedData(Botan::byte * buff, size_t size, std::string key, int * status) {
+Botan::SecureVector<Botan::byte> ShsmUtils::readProtectedData(Botan::byte * buff, size_t size, std::string key, std::string macKey, int * status) {
     // AES-256-CBC encrypt data for decryption.
-    // IV is null for now, TODO: force others to change this to AES-GCM with correct IV.
+    // IV is null for now, but freshness nonce in the first block imitates IV into some extent.
     Botan::byte iv[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    Botan::byte encKey[32];
-    size_t keySize = ShsmApiUtils::hexToBytes(key, encKey, 32);
-    Botan::SecureVector<Botan::byte> tSecVector(encKey, 32);
-    if (keySize != 32){
-        ERROR_MSG("getRequestDecrypt", "AES key size is invalid");
+    Botan::byte encKeyBuff[32];
+    Botan::byte macKeyBuff[32];
+    size_t keySize = ShsmApiUtils::hexToBytes(key, encKeyBuff, 32);
+    Botan::SecureVector<Botan::byte> tSecVector(encKeyBuff, 32);
+    size_t macKeySize = ShsmApiUtils::hexToBytes(macKey, macKeyBuff, 32);
+    Botan::SecureVector<Botan::byte> tMacVector(macKeyBuff, 32);
+    if (keySize != 32 || macKeySize != 32){
+        ERROR_MSG("getRequestDecrypt", "AES (enc or mac) key size is invalid");
     }
 
     Botan::SymmetricKey aesKey(tSecVector);
+    Botan::SymmetricKey aesMacKey(tMacVector);
     Botan::InitializationVector aesIv(iv, 16);
 
-    // Decryption.
-    Botan::Pipe pipe(Botan::get_cipher("AES-256/CBC/PKCS7", aesKey, aesIv, Botan::DECRYPTION));
-    pipe.process_msg(buff, size);
+    // Check size, MAC tag is at the end of the message.
+    if (size < (16+MACTAGLEN)){
+        ERROR_MSG("readProtectedData", "Input data too short");
+        *status = -10;
+        return Botan::SecureVector<Botan::byte>(0);
+    }
+
+    // Get the MAC tag from the message.
+    Botan::byte * givenMac = buff+(size-MACTAGLEN);
+
+    // Decryption + MAC computation.
+    Botan::Pipe pipe(
+            new Botan::Fork(
+                    // output from decryption goes here, messageId=0
+                    Botan::get_cipher("AES-256/CBC/PKCS7", aesKey, aesIv, Botan::DECRYPTION),
+                    // output of MAC goes here, messageId=1.
+                    new Botan::MAC_Filter("CBC_MAC(AES-256)", aesMacKey)
+            )
+    );
+
+    pipe.process_msg(buff, size-MACTAGLEN);
+
+    // Read the MAC.
+    Botan::byte computedMac[MACTAGLEN];
+    size_t computedMacSize = pipe.read(computedMac, MACTAGLEN, 1);
+    if (computedMacSize != MACTAGLEN){
+        ERROR_MSG("readProtectedData", "Computed MAC tag is invalid");
+        *status = -11;
+        return Botan::SecureVector<Botan::byte>(0);
+    }
+
+    // Compare the MAC.
+    if (memcmp(givenMac, computedMac, MACTAGLEN) != 0){
+        ERROR_MSG("readProtectedData", "MAC invalid");
+        *status = -12;
+        return Botan::SecureVector<Botan::byte>(0);
+    }
 
     // Read the output.
     Botan::byte * outBuff = (Botan::byte *) malloc(sizeof(Botan::byte) * (size + 64));
@@ -136,27 +207,38 @@ Botan::SecureVector<Botan::byte> ShsmUtils::readProtectedData(Botan::byte * buff
         return Botan::SecureVector<Botan::byte>(0);
     }
 
-    // Write header of form 0x1f | <UOID-4B>
-    size_t cipLen = pipe.read(outBuff, (size + 64));
-    if (cipLen < 5){
+    // Read header of form 0xf1 | <UOID-4B> | <mangled-freshness-nonce-8B>
+    size_t cipLen = pipe.read(outBuff, (size + 64), 0);
+    if (cipLen < 5+FRESHNESS_NONCE_LEN){
         ERROR_MSG("readProtectedData", "Decryption failed, size is too small");
         *status = -2;
         free(outBuff);
         return Botan::SecureVector<Botan::byte>(0);
     }
 
-    DEBUG_MSGF((TAG"After decryption: cipLen=%lu, %x %x %x %x %x %x %x", cipLen,
-               outBuff[0],
-               outBuff[1],
-               outBuff[2],
-               outBuff[3],
-               outBuff[4],
-               outBuff[5],
-               outBuff[6]
+    // Check the flag, has to be 0xf1
+    if (outBuff[0] != 'f' || outBuff[1] != '1'){
+        ERROR_MSG("readProtectedData", "Invalid message block format");
+        *status = -15;
+        free(outBuff);
+        return Botan::SecureVector<Botan::byte>(0);
+    }
+
+    // Read user object ID from he buffer.
+    unsigned long userObjectId = ShsmApiUtils::getInt32FromHexString((const char *) outBuff + 1);
+
+    // Demangle nonce in the buffer.
+    ShsmUtils::demangleNonce(outBuff+5, FRESHNESS_NONCE_LEN);
+
+    DEBUG_MSGF((TAG"After decryption: cipLen=%lu, UOid: %04X, nonce %02x%02x%02x%02x%02x%02x%02x%02x", cipLen, userObjectId,
+               outBuff[5+0], outBuff[5+1],
+               outBuff[5+2], outBuff[5+3],
+               outBuff[5+4], outBuff[5+5],
+               outBuff[5+5], outBuff[5+6]
                ));
 
     // Prepare return object from the processed buffer.
-    Botan::SecureVector<Botan::byte> toReturn = Botan::SecureVector<Botan::byte>(outBuff + 5, cipLen - 5);
+    Botan::SecureVector<Botan::byte> toReturn = Botan::SecureVector<Botan::byte>(outBuff + 5+FRESHNESS_NONCE_LEN, cipLen - 5 - FRESHNESS_NONCE_LEN);
 
     // Deallocate temporary buffer.
     free(outBuff);
