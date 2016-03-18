@@ -315,7 +315,7 @@ std::string ShsmApiUtils::getRequestForCertGen(long bitsize, const char *alg, co
 std::string ShsmApiUtils::getRequestShsmPubKey(std::string nonce) {
     // Generate JSON request here.
     Json::Value jReq;
-    jReq["function"] = "GetSHSMPubKey";
+    jReq["function"] = "GetImportPublicKey";
     jReq["version"] = "1.0";
     jReq["nonce"] = nonce;
 
