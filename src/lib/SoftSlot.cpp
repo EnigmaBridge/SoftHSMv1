@@ -66,13 +66,14 @@ SoftSlot::~SoftSlot() {
 
 // Add a new slot last in the chain
 
-void SoftSlot::addSlot(CK_SLOT_ID newSlotID, char *newDBPath, std::string host, int port, std::string key, std::string macKey) {
+void SoftSlot::addSlot(CK_SLOT_ID newSlotID, char *newDBPath, std::string host, int port, std::string apiKey, std::string key, std::string macKey) {
   if(nextSlot == NULL_PTR) {
     nextSlot = new SoftSlot();
     slotID = newSlotID;
     dbPath = newDBPath;
     this->host = host;
     this->port = port;
+    this->apiKey = apiKey;
     this->key = key;
     this->macKey = macKey;
 
@@ -84,12 +85,12 @@ void SoftSlot::addSlot(CK_SLOT_ID newSlotID, char *newDBPath, std::string host, 
       return;
     }
 
-    nextSlot->addSlot(newSlotID, newDBPath, host, port, key, macKey);
+    nextSlot->addSlot(newSlotID, newDBPath, host, port, apiKey, key, macKey);
   }
 }
 
 void SoftSlot::addSlot(CK_SLOT_ID newSlotID, char *newDBPath) {
-  this->addSlot(newSlotID, newDBPath, "", -1, "", "");
+  this->addSlot(newSlotID, newDBPath, "", -1, "", "", "");
 }
 
 // Find the slot with a given ID

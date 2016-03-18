@@ -19,6 +19,12 @@ protected:
     int          mTimeout;
 
     /**
+     * API key to access EB interfaces.
+     */
+    std::string apiKey;
+
+
+    /**
      * Encryption key used for communication with SHSM.
      */
     std::string key;
@@ -67,6 +73,13 @@ public:
         ShsmConnectionConfig::mTimeout = mTimeout;
     }
 
+    const std::string &getApiKey() const {
+        return apiKey;
+    }
+
+    void setApiKey(const std::string &key) {
+        ShsmConnectionConfig::apiKey = key;
+    }
 
     const std::string &getKey() const {
         return key;

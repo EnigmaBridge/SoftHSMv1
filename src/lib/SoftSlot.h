@@ -46,7 +46,7 @@ class SoftSlot {
     ~SoftSlot();
 
     void addSlot(CK_SLOT_ID newSlotID, char *newDBPath);
-    void addSlot(CK_SLOT_ID newSlotID, char *newDBPath, std::string host, int port, std::string key, std::string macKey);
+    void addSlot(CK_SLOT_ID newSlotID, char *newDBPath, std::string host, int port, std::string apiKey, std::string key, std::string macKey);
     SoftSlot *getSlot(CK_SLOT_ID getID);
     SoftSlot *getNextSlot();
     CK_SLOT_ID getSlotID();
@@ -65,6 +65,7 @@ class SoftSlot {
 
     std::string host;
     int port;
+    std::string apiKey;
     std::string key;
     std::string macKey;
 
@@ -74,6 +75,10 @@ class SoftSlot {
 
     const std::string &getHost() const {
       return host;
+    }
+
+    const std::string &getApiKey() const {
+      return apiKey;
     }
 
     const std::string &getKey() const {

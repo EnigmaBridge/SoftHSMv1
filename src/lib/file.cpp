@@ -53,6 +53,7 @@
 #define CFG_DB    "db"
 #define CFG_HOST  "host"
 #define CFG_PORT  "port"
+#define CFG_APIKEY   "apikey"
 #define CFG_KEY   "key"
 #define CFG_MACKEY   "mackey"
 
@@ -134,6 +135,7 @@ CK_RV readConfigFile() {
     // Check if it is SHSM slot.
     std::string host = "";
     Json::Int port = -1;
+    std::string apiKey = "";
     std::string key = "";
     std::string macKey = "";
 
@@ -141,6 +143,7 @@ CK_RV readConfigFile() {
     if (!cslot[CFG_HOST].isNull()) {
       host = cslot[CFG_HOST].asString();
       port = cslot[CFG_PORT].isNull() ? CFG_DEFAULT_PORT : cslot[CFG_PORT].asInt();
+      apiKey = cslot[CFG_APIKEY].isNull() ? "" : cslot[CFG_APIKEY].asString();
       key = cslot[CFG_KEY].isNull() ? "" : cslot[CFG_KEY].asString();
       macKey = cslot[CFG_MACKEY].isNull() ? "" : cslot[CFG_MACKEY].asString();
     }
@@ -155,7 +158,7 @@ CK_RV readConfigFile() {
     memcpy(realPath, slotDb.c_str(), slotDb.length());
 
     // Add the slot.
-    softHSM->slots->addSlot(slotId, realPath, host, port, key, macKey);
+    softHSM->slots->addSlot(slotId, realPath, host, port, apiKey, key, macKey);
   }
 
   return CKR_OK;

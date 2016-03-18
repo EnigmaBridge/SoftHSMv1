@@ -115,6 +115,7 @@ void usage() {
   printf("  --version           Show version info.\n");
   printf("  --getshsmkey <k>    Queries SHSM public key, saves it to a given file.\n");
   printf("  --gencrt            Generate a keypair and signed certificate in SHSM.\n");
+  printf("  --apikey <apikey>   API key for SHSM interface access.\n");
   printf("  --host <host>       Hostname for SHSM.\n");
   printf("  --port <port>       Port number for SHSM connection.\n");
   printf("  --size <keysize>    Bitsize of the keypair generated on the SHSM, by default 2048.\n");
@@ -160,6 +161,7 @@ enum {
   OPT_VERSION,
   OPT_GENCRT,
   OPT_GETSHSMKEY,
+  OPT_APIKEY,
   OPT_HOST,
   OPT_PORT,
   OPT_SIZE,
@@ -191,6 +193,7 @@ static const struct option long_options[] = {
   { "version",         0, NULL, OPT_VERSION },
   { "gencrt",          0, NULL, OPT_GENCRT },
   { "getshsmkey",      1, NULL, OPT_GETSHSMKEY },
+  { "apikey",          1, NULL, OPT_APIKEY },
   { "host",            1, NULL, OPT_HOST },
   { "port",            1, NULL, OPT_PORT },
   { "size",            1, NULL, OPT_SIZE },
@@ -237,6 +240,7 @@ int main(int argc, char *argv[]) {
   char *module = NULL;
   char *objectID = NULL;
   char *slot = NULL;
+  char *apiKey = NULL;
   char *hostname = NULL;
   int port = 11112;
   long bitsize = 2048;
@@ -332,6 +336,9 @@ int main(int argc, char *argv[]) {
       case OPT_GENCRT:
         doCrtGen = 1;
         action++;
+        break;
+      case OPT_APIKEY:
+        apiKey = optarg;
         break;
       case OPT_HOST:
         hostname = optarg;
@@ -455,11 +462,11 @@ int main(int argc, char *argv[]) {
 
   // Certgen option here....
   if (doCrtGen){
-    status = certGenShsm(slot, userPIN, hostname, port, bitsize, algname, dn, label, objectID, crtPath, crtChainPath);
+    status = certGenShsm(slot, userPIN, hostname, port, apiKey, bitsize, algname, dn, label, objectID, crtPath, crtChainPath);
   }
 
   if (doGetPubKey){
-    status = getShsmPubKey(hostname, port, crtPath);
+    status = getShsmPubKey(hostname, port, crtPath, apiKey);
   }
 
   // Certificate import to the PKCS#11.
@@ -729,17 +736,23 @@ int showSlots() {
 
 // Downloads SHSM public key and saves it to the local file.
 
-int getShsmPubKey(char *hostname, int port, char *crtPath){
+int getShsmPubKey(char *hostname, int port, char *crtPath, char *apikey){
   if (hostname == NULL){
     fprintf(stderr, "Error: Hostname cannot be null for SHSM operation. Use --host hostname\n");
     return 1;
   }
+  if (apikey == NULL){
+    fprintf(stderr, "Error: apikey cannot be null for SHSM operation. Use --apikey apikey\n");
+    return 1;
+  }
+
+  std::string apiKeyString(apikey);
 
   //
   // Do the request, process response.
   //
   int requestStatus = 0;
-  std::string jsonRequest = ShsmApiUtils::getRequestShsmPubKey(ShsmApiUtils::generateNonce(16));
+  std::string jsonRequest = ShsmApiUtils::getRequestShsmPubKey(apiKeyString, ShsmApiUtils::generateNonce(16));
   fprintf(stderr, "Request: %s\n", jsonRequest.c_str());
 
   std::string jsonResponse = ShsmApiUtils::request(hostname, port, jsonRequest, &requestStatus);
@@ -790,7 +803,7 @@ int getShsmPubKey(char *hostname, int port, char *crtPath){
 
 // CertGen in SHSM.
 
-int certGenShsm(char *slot, char *userPIN, char *hostname, int port, long bitsize, const char *algname, const char *dn,
+int certGenShsm(char *slot, char *userPIN, char *hostname, int port, char *apikey, long bitsize, const char *algname, const char *dn,
                 char *label, const char *objectID, const char *crtPath, const char *certChainPath)
 {
   if(slot == NULL) {
@@ -815,6 +828,11 @@ int certGenShsm(char *slot, char *userPIN, char *hostname, int port, long bitsiz
 
   if (hostname == NULL){
     fprintf(stderr, "Error: Hostname cannot be null for SHSM operation. Use --host hostname\n");
+    return 1;
+  }
+
+  if (apikey == NULL){
+    fprintf(stderr, "Error: apikey cannot be null for SHSM operation. Use --apikey apikey\n");
     return 1;
   }
 
@@ -864,8 +882,9 @@ int certGenShsm(char *slot, char *userPIN, char *hostname, int port, long bitsiz
   //
   // Do the request, process response.
   //
+  std::string apiKeyStr(apikey);
   int requestStatus = 0;
-  std::string jsonRequest = ShsmApiUtils::getRequestForCertGen(bitsize, algname, dn);
+  std::string jsonRequest = ShsmApiUtils::getRequestForCertGen(apiKeyStr, bitsize, algname, dn);
   fprintf(stderr, "Request: %s\n", jsonRequest.c_str());
 
   std::string jsonResponse = ShsmApiUtils::request(hostname, port, jsonRequest, &requestStatus);

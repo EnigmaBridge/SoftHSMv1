@@ -289,13 +289,21 @@ std::string ShsmApiUtils::generateNonce(size_t len) {
     return res.str();
 }
 
-std::string ShsmApiUtils::getRequestForCertGen(long bitsize, const char *alg, const char *dn) {
+std::string ShsmApiUtils::generateApiObjectId(std::string apiKey, SHSM_KEY_HANDLE userObjectId){
+    std::stringstream res;
+    res << apiKey;
+    res << std::hex << std::fixed << std::setfill('0') << std::setw(10) << ((unsigned)userObjectId);
+    return res.str();
+}
+
+std::string ShsmApiUtils::getRequestForCertGen(std::string apiKey, long bitsize, const char *alg, const char *dn) {
     // Generate JSON request here.
     Json::Value jReq;
     jReq["function"] = "CreateUserObject";
     jReq["version"] = "1.0";
     jReq["nonce"] = ShsmApiUtils::generateNonce(16);
     jReq["type"] = "6";
+    jReq["objectid"] = ShsmApiUtils::generateApiObjectId(apiKey, 0);
 
     Json::Value jData;
     jData["dn"] = dn;
@@ -312,12 +320,13 @@ std::string ShsmApiUtils::getRequestForCertGen(long bitsize, const char *alg, co
     return json;
 }
 
-std::string ShsmApiUtils::getRequestShsmPubKey(std::string nonce) {
+std::string ShsmApiUtils::getRequestShsmPubKey(std::string apiKey, std::string nonce) {
     // Generate JSON request here.
     Json::Value jReq;
     jReq["function"] = "GetImportPublicKey";
     jReq["version"] = "1.0";
     jReq["nonce"] = nonce;
+    jReq["objectid"] = ShsmApiUtils::generateApiObjectId(apiKey, 0);
 
     // Build string request body.
     Json::FastWriter jWriter;

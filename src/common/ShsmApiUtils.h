@@ -83,14 +83,19 @@ public:
     static std::string generateNonce(size_t len);
 
     /**
+     * Generates API object ID for the request from api key and user object ID
+     */
+    static std::string generateApiObjectId(std::string apiKey, SHSM_KEY_HANDLE userObjectId);
+
+    /**
      * Generates JSON request for certificate generation.
      */
-    static std::string getRequestForCertGen(long bitsize, const char *alg, const char *dn);
+    static std::string getRequestForCertGen(std::string apiKey, long bitsize, const char *alg, const char *dn);
 
     /**
      * Returns request string for query for SHSM public key.
      */
-    static std::string getRequestShsmPubKey(std::string nonce);
+    static std::string getRequestShsmPubKey(std::string apiKey, std::string nonce);
 
     /**
      * Converts given field to integer. It may be string-encoded integer or integer.

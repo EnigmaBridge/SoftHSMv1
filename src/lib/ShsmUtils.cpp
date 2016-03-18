@@ -42,7 +42,7 @@ SHSM_KEY_HANDLE ShsmUtils::getShsmKeyHandle(SoftDatabase *db, CK_OBJECT_HANDLE h
     return shsmHandle;
 }
 
-std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string key, std::string macKey, const Botan::byte byte[], size_t t) {
+std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string apiKey, std::string key, std::string macKey, const Botan::byte byte[], size_t t) {
     // Generate JSON request here.
     // 8B freshness nonce first.
     Botan::byte nonceBytes[FRESHNESS_NONCE_LEN];
@@ -53,6 +53,7 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     Json::Value jReq;
     jReq["function"] = "ProcessData";
     jReq["version"] = "1.0";
+    jReq["objectid"] = ShsmApiUtils::generateApiObjectId(apiKey, privKey->getKeyId());
     jReq["nonce"] = finalNonce;
     const int keyId = (int) privKey->getKeyId();
 

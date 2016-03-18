@@ -20,6 +20,7 @@ PK_Decryptor_EME_Remote::PK_Decryptor_EME_Remote(ShsmPrivateKey * key,
                                                  const SoftSlot *curSlot) : PK_Decryptor()
 {
     std::string host = curSlot->getHost();
+    std::string apiKey = curSlot->getApiKey();
     std::string ckey = curSlot->getKey();
     std::string cMackey = curSlot->getMacKey();
     int port = curSlot->getPort();
@@ -31,6 +32,7 @@ PK_Decryptor_EME_Remote::PK_Decryptor_EME_Remote(ShsmPrivateKey * key,
     this->eme = eme;
     this->privKey = key;
     this->connectionConfig = new ShsmConnectionConfig(host, port);
+    this->connectionConfig->setApiKey(apiKey);
     this->connectionConfig->setKey(ckey);
     this->connectionConfig->setMacKey(cMackey);
 }
@@ -117,6 +119,7 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     // Generate JSON request for decryption.
     Botan::SecureVector<Botan::byte> errRet = Botan::SecureVector<Botan::byte>(0);
     std::string json = ShsmUtils::getRequestDecrypt(this->privKey,
+                                                    this->connectionConfig->getApiKey(),
                                                     this->connectionConfig->getKey(),
                                                     this->connectionConfig->getMacKey(),
                                                     byte, t);

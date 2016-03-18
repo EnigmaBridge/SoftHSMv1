@@ -25,7 +25,7 @@ public:
     /**
      * Returns request string for decryption query.
      */
-    static std::string getRequestDecrypt(ShsmPrivateKey * privKey, std::string key, std::string macKey, const Botan::byte byte[], size_t t);
+    static std::string getRequestDecrypt(ShsmPrivateKey * privKey, std::string apiKey, std::string key, std::string macKey, const Botan::byte byte[], size_t t);
 
     /**
      * Process ProcessData response, unprotects data, removes rubbish.
