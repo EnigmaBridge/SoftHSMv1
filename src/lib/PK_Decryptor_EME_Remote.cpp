@@ -161,7 +161,7 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
 
     // Read prefix, first 4 characters (2 bytes). unsigned integer.
     // Denotes number of bytes of plain data. Usually 0.
-    unsigned long prefix = ShsmApiUtils::getInt32FromHexString(resultString.c_str());
+    unsigned long prefix = ShsmApiUtils::getInt16FromHexString(resultString.c_str());
 
     // Strip suffix of the key beginning with "Packet"
     size_t pos = resultString.rfind("Packet", std::string::npos);

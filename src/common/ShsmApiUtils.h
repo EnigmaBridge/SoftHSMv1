@@ -128,8 +128,14 @@ public:
     static std::string removeWhiteSpace(std::string &input);
 
     /**
-     * Reads 4 bytes long representation, converts to unsigned long.
-     * Buff has to be at least 4 bytes long.
+     * Reads 2 bytes representation, converts to unsigned long.
+     * String has to be at least 4 characters long.
+     */
+    static unsigned long getInt16FromHexString(const char *buff);
+
+    /**
+     * Reads 4 bytes integer representation, converts to unsigned long.
+     * String has to be at least 8 characters long.
      */
     static unsigned long getInt32FromHexString(const char *buff);
 

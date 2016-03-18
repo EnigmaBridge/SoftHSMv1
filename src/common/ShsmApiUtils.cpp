@@ -396,7 +396,12 @@ unsigned int ShsmApiUtils::getHexUint32FromJsonField(Json::Value &root, int *suc
     }
 
     if (root.isString()){
-        return (unsigned int) ShsmApiUtils::getInt32FromHexString(root.asCString());
+        const unsigned long ln = root.asString().length();
+        if (ln == 8) {
+            return (unsigned int) ShsmApiUtils::getInt32FromHexString(root.asCString());
+        } else if (ln == 4){
+            return (unsigned int) ShsmApiUtils::getInt16FromHexString(root.asCString());
+        }
     }
 
     if (success != NULL){
@@ -457,11 +462,23 @@ std::string ShsmApiUtils::removeWhiteSpace(std::string &input) {
     return copy;
 }
 
-unsigned long ShsmApiUtils::getInt32FromHexString(const char *buff) {
+unsigned long ShsmApiUtils::getInt16FromHexString(const char *buff) {
     unsigned long data = (unsigned long) ShsmApiUtils::hexdigitToInt(buff[3]);
-    data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[2])) << 8;
-    data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[1])) << 16;
-    data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[0])) << 24;
+    data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[2])) << 4;
+    data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[1])) << 8;
+    data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[0])) << 12;
+    return data;
+}
+
+unsigned long ShsmApiUtils::getInt32FromHexString(const char *buff) {
+    unsigned long data = (unsigned long) ShsmApiUtils::hexdigitToInt(buff[7]);
+    data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[6])) << 4;
+    data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[5])) << 8;
+    data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[4])) << 12;
+    data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[3])) << 16;
+    data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[2])) << 20;
+    data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[1])) << 24;
+    data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[0])) << 28;
     return data;
 }
 
