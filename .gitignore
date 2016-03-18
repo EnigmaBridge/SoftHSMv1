@@ -36,3 +36,8 @@ test-driver
 *.so
 *.so.*
 *.dylib
+
+# Project files
+.idea
+nbproject
+
