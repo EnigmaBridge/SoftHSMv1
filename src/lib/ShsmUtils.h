@@ -30,7 +30,7 @@ public:
     /**
      * Process ProcessData response, unprotects data, removes rubbish.
      */
-    static Botan::SecureVector<Botan::byte> readProtectedData(Botan::byte * buff, size_t size, std::string key, std::string macKey, int * status);
+    static int readProtectedData(Botan::byte * buff, size_t size, std::string key, std::string macKey, Botan::SecureVector<Botan::byte> ** result);
 
     /**
      * Removes PKCS1.5 padding from the input buffer and places output to the output buffer.

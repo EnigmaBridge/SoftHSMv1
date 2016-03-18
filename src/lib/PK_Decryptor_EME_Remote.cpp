@@ -182,28 +182,33 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     DEBUG_MSGF((TAG"To AES-decrypt string: %s", toDecryptStr.c_str()));
 
     // AES-256-CBC-PKCS7 decrypt
-    int decStatus = 0;
-    Botan::SecureVector<Botan::byte> decData = ShsmUtils::readProtectedData(
+    Botan::SecureVector<Botan::byte> * decData = NULL;
+    int decStatus = ShsmUtils::readProtectedData(
             buff,
             buffSize,
             this->connectionConfig->getKey(),
             this->connectionConfig->getMacKey(),
-            &decStatus);
+            &decData);
 
-    std::string decStr = ShsmApiUtils::bytesToHex(decData.begin(), decData.size());
+    if (decStatus != 0){
+        DEBUG_MSGF((TAG"Failed to read protected data"));
+        return errRet;
+    }
+
+    std::string decStr = ShsmApiUtils::bytesToHex(decData->begin(), decData->size());
     DEBUG_MSGF((TAG"RSA-decrypted string: %s", decStr.c_str()));
 
     // Adjust data size, padding / aux info may got stripped.
-    buffSize = decData.size();
+    buffSize = decData->size();
     free(buff);
 
-    DEBUG_MSGF((TAG"Decrypted data length: %lu", decData.size()));
+    DEBUG_MSGF((TAG"Decrypted data length: %lu", decData->size()));
 
     // Remove PKCS#1 1.5 padding.
     if (this->eme == "EME-PKCS1-v1_5"){
         int paddingStatus = 0;
         // TODO: use unpadding scheme EME_PKCS1v15 eme_pkcs.h
-        ssize_t newSize = ShsmUtils::removePkcs15Padding(decData.begin(), buffSize, decData.begin(), bufferLen, &paddingStatus);
+        ssize_t newSize = ShsmUtils::removePkcs15Padding(decData->begin(), buffSize, decData->begin(), bufferLen, &paddingStatus);
         if (newSize < 0){
             DEBUG_MSG("decryptCall", "Decrypt error, padding cannot be removed.")
         } else {
@@ -212,14 +217,18 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
 
     } else {
         ERROR_MSG("decryptCall", "Padding cannot be determined.");
+        delete decData;
         return errRet;
     }
 
-    Botan::byte * b = decData.begin();
-    DEBUG_MSGF((TAG"Decrypted, returning buffer of size: %lu %x %x, size of decData: %lu", buffSize, b, b+1, decData.size()));
+    Botan::byte * b = decData->begin();
+    DEBUG_MSGF((TAG"Decrypted, returning buffer of size: %lu %x %x, size of decData: %lu", buffSize, b, b+1, decData->size()));
 
     // Allocate new secure vector and return it.
-    return Botan::SecureVector<Botan::byte>(decData.begin(), buffSize);
+    Botan::SecureVector<Botan::byte> toReturn = Botan::SecureVector<Botan::byte>(decData->begin(), buffSize);
+    delete decData;
+
+    return toReturn;
 }
 
 Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::dec(const Botan::byte byte[], size_t t) const {

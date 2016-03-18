@@ -143,7 +143,7 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ke
     return json;
 }
 
-Botan::SecureVector<Botan::byte> ShsmUtils::readProtectedData(Botan::byte * buff, size_t size, std::string key, std::string macKey, int * status) {
+int ShsmUtils::readProtectedData(Botan::byte * buff, size_t size, std::string key, std::string macKey, Botan::SecureVector<Botan::byte> ** result) {
     // AES-256-CBC encrypt data for decryption.
     // IV is null for now, but freshness nonce in the first block imitates IV into some extent.
     Botan::byte iv[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -164,8 +164,7 @@ Botan::SecureVector<Botan::byte> ShsmUtils::readProtectedData(Botan::byte * buff
     // Check size, MAC tag is at the end of the message.
     if (size < (16+MACTAGLEN)){
         ERROR_MSG("readProtectedData", "Input data too short");
-        *status = -10;
-        return Botan::SecureVector<Botan::byte>(0);
+        return -10;
     }
 
     // Get the MAC tag from the message.
@@ -188,40 +187,35 @@ Botan::SecureVector<Botan::byte> ShsmUtils::readProtectedData(Botan::byte * buff
     size_t computedMacSize = pipe.read(computedMac, MACTAGLEN, 1);
     if (computedMacSize != MACTAGLEN){
         ERROR_MSG("readProtectedData", "Computed MAC tag is invalid");
-        *status = -11;
-        return Botan::SecureVector<Botan::byte>(0);
+        return -11;
     }
 
     // Compare the MAC.
     if (memcmp(givenMac, computedMac, MACTAGLEN) != 0){
         ERROR_MSG("readProtectedData", "MAC invalid");
-        *status = -12;
-        return Botan::SecureVector<Botan::byte>(0);
+        return -12;
     }
 
     // Read the output.
     Botan::byte * outBuff = (Botan::byte *) malloc(sizeof(Botan::byte) * (size + 64));
     if (buff == NULL_PTR){
         ERROR_MSG("readProtectedData", "Could not allocate enough memory for decryption operation");
-        *status = -1;
-        return Botan::SecureVector<Botan::byte>(0);
+        return -1;
     }
 
     // Read header of form 0xf1 | <UOID-4B> | <mangled-freshness-nonce-8B>
     size_t cipLen = pipe.read(outBuff, (size + 64), 0);
     if (cipLen < 5+FRESHNESS_NONCE_LEN){
         ERROR_MSG("readProtectedData", "Decryption failed, size is too small");
-        *status = -2;
         free(outBuff);
-        return Botan::SecureVector<Botan::byte>(0);
+        return -2;
     }
 
     // Check the flag, has to be 0xf1
     if (outBuff[0] != 'f' || outBuff[1] != '1'){
         ERROR_MSG("readProtectedData", "Invalid message block format");
-        *status = -15;
         free(outBuff);
-        return Botan::SecureVector<Botan::byte>(0);
+        return -15;
     }
 
     // Read user object ID from he buffer.
@@ -238,13 +232,12 @@ Botan::SecureVector<Botan::byte> ShsmUtils::readProtectedData(Botan::byte * buff
                ));
 
     // Prepare return object from the processed buffer.
-    Botan::SecureVector<Botan::byte> toReturn = Botan::SecureVector<Botan::byte>(outBuff + 5+FRESHNESS_NONCE_LEN, cipLen - 5 - FRESHNESS_NONCE_LEN);
+    *result = new Botan::SecureVector<Botan::byte>(outBuff + 5+FRESHNESS_NONCE_LEN, cipLen - 5 - FRESHNESS_NONCE_LEN);
 
     // Deallocate temporary buffer.
     free(outBuff);
 
-    *status = 0;
-    return toReturn;
+    return 0;
 }
 
 ssize_t ShsmUtils::removePkcs15Padding(const Botan::byte *buff, size_t len, Botan::byte *out, size_t maxLen, int *status) {
