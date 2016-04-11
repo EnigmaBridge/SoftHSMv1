@@ -9,8 +9,8 @@
     {
         "slot": 0,
         "db": "@softhsmdbdir@/slot0.db",
-        "host": "enigmabridge.plus.com",
-        "port": 11111,
+        "host": "site1.enigmabridge.com",
+        "port": 11110,
         "apikey": "TEST_API",
         "key": "1234567890123456789012345678901234567890123456789012345678901234",
         "mackey": "2224262820223456789012345678901234567890123456789012345678901234"
