@@ -170,9 +170,9 @@ Botan::Public_Key* SoftSession::getKey(CK_OBJECT_HANDLE hKey) {
         }
 
       } else if (objClass == CKO_PRIVATE_KEY && isShsm) {
-        // Load attributes related to SHSM RSA private key - SHSM key id.
-        SHSM_KEY_HANDLE shsmHandle = ShsmUtils::getShsmKeyHandle(this->db, hKey);
-        if (shsmHandle == SHSM_INVALID_KEY_HANDLE){
+        // Load attributes related to SHSM RSA private key.
+        std::shared_ptr<ShsmUserObjectInfo> uo = ShsmUtils::buildShsmUserObjectInfo(this->db, hKey, this->currentSlot);
+        if (!uo){
           ERROR_MSG("getKey", "Invalid SHSM handle");
           return NULL_PTR;
         }
@@ -186,7 +186,7 @@ Botan::Public_Key* SoftSession::getKey(CK_OBJECT_HANDLE hKey) {
 
         try {
           DEBUG_MSGF(("SoftSession: ShsmPrivateKey, bigN: %d, bits: %d, handle: %d", bigN.size(), bigN.bits(), shsmHandle));
-          tmpKey = new ShsmPrivateKey(bigN, bigE, shsmHandle);
+          tmpKey = new ShsmPrivateKey(bigN, bigE, uo);
         }
         catch(std::exception& e) {
           ERROR_MSG("getKey", "ShsmPrivateKey key init exception");

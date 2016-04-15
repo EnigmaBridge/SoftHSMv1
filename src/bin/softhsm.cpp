@@ -1026,7 +1026,7 @@ int certGenShsm(char *slot, char *userPIN, char *hostname, int port, char *apike
           { CKA_PRIVATE,          &ckTrue,        sizeof(ckTrue) },
           { CKA_EXTRACTABLE,      &ckFalse,       sizeof(ckFalse) },
           { CKA_SHSM_KEY,         &ckTrue,        sizeof(ckFalse) },
-          { CKA_SHSM_KEY_HANDLE,  &privKeyHandle, sizeof(privKeyHandle) },
+          { CKA_SHSM_UO_HANDLE,   &privKeyHandle, sizeof(privKeyHandle) },
           { CKA_PUBLIC_EXPONENT,  keyMat->bigE,   keyMat->sizeE },
           { CKA_MODULUS,          keyMat->bigN,   keyMat->sizeN },
           { CKA_PRIVATE_EXPONENT, &zero,          zero.bytes() },

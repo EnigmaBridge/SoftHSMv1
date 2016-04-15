@@ -11,6 +11,7 @@ src/common
 src/json
 src/lib/cryptoki_compat/
 src/lib/cryptoki_compat/pkcs11.h
+src/lib/smarthsm
 /opt/local/include/botan-1.10)
 
 set(SOURCE_FILES
@@ -71,5 +72,7 @@ add_executable(SoftHSMv1 ${SOURCE_FILES}
         src/lib/smarthsm/ShsmUtils.h
         src/common/ShsmApiUtils.cpp
         src/common/ShsmApiUtils.h
+        src/lib/smarthsm/ShsmUserObjectInfo.cpp
+        src/lib/smarthsm/ShsmUserObjectInfo.h
         src/lib/smarthsm/ShsmNullRng.cpp
         src/lib/smarthsm/ShsmNullRng.h)

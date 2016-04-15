@@ -289,7 +289,7 @@ std::string ShsmApiUtils::generateNonce(size_t len) {
     return res.str();
 }
 
-std::string ShsmApiUtils::generateApiObjectId(std::string apiKey, SHSM_KEY_HANDLE userObjectId){
+std::string ShsmApiUtils::generateApiObjectId(const std::string apiKey, SHSM_KEY_HANDLE userObjectId){
     std::stringstream res;
     res << apiKey;
     res << std::hex << std::fixed << std::setfill('0') << std::setw(10) << ((unsigned)userObjectId);

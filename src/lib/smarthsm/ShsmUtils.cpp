@@ -31,7 +31,7 @@ SHSM_KEY_HANDLE ShsmUtils::getShsmKeyHandle(SoftDatabase *db, CK_OBJECT_HANDLE h
     SHSM_KEY_HANDLE shsmHandle = SHSM_INVALID_KEY_HANDLE;
 
     // Load this attribute via generic DB access call.
-    CK_ATTRIBUTE attr = {CKA_SHSM_KEY_HANDLE, (void *) &shsmHandle, sizeof(SHSM_KEY_HANDLE)};
+    CK_ATTRIBUTE attr = {CKA_SHSM_UO_HANDLE, (void *) &shsmHandle, sizeof(SHSM_KEY_HANDLE)};
     CK_RV shsmRet = db->getAttribute(hKey, &attr);
 
     if (shsmRet != CKR_OK){
@@ -42,18 +42,115 @@ SHSM_KEY_HANDLE ShsmUtils::getShsmKeyHandle(SoftDatabase *db, CK_OBJECT_HANDLE h
     return shsmHandle;
 }
 
-std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string apiKey, std::string key, std::string macKey, const Botan::byte byte[], size_t t) {
+std::shared_ptr<ShsmUserObjectInfo> ShsmUtils::buildShsmUserObjectInfo(SoftDatabase *db, CK_OBJECT_HANDLE hKey, SoftSlot * slot) {
+    std::shared_ptr<ShsmUserObjectInfo> uo(new ShsmUserObjectInfo());
+    SHSM_KEY_HANDLE shsmHandle = SHSM_INVALID_KEY_HANDLE;
+
+    // Load this attribute via generic DB access call.
+    CK_ATTRIBUTE attr = {CKA_SHSM_UO_HANDLE, (void *) &shsmHandle, sizeof(SHSM_KEY_HANDLE)};
+    CK_RV shsmRet = db->getAttribute(hKey, &attr);
+    if (shsmRet != CKR_OK){
+        ERROR_MSG("buildShsmUserObjectInfo", "Could not get attribute SHSM_KEY_HANDLE");
+        return nullptr;
+    }
+    uo->setKeyId(shsmHandle);
+
+#define EB_COM_KEY_SIZE 32
+#define EB_API_KEY_SIZE 64
+#define EB_HOSTNAME_SIZE 256
+
+    // encKey & macKey, apiKey, hostname, portnumber buffers.
+    Botan::byte * encKeyBuff[EB_COM_KEY_SIZE];
+    Botan::byte * macKeyBuff[EB_COM_KEY_SIZE];
+    char * apiKeyBuff[EB_API_KEY_SIZE];
+    char * hostnameBuff[EB_HOSTNAME_SIZE];
+    int portNumBuff = -1;
+    bool hasHostname = false;
+
+    // EncKey, mandatory.
+    attr = {CKA_SHSM_UO_ENCKEY, (void *) &encKeyBuff, EB_COM_KEY_SIZE};
+    shsmRet = db->getAttribute(hKey, &attr);
+    if (shsmRet != CKR_OK || attr.ulValueLen != EB_COM_KEY_SIZE){
+        ERROR_MSG("buildShsmUserObjectInfo", "Could not get attribute CKA_SHSM_UO_ENCKEY");
+        return nullptr;
+    }
+    uo->setEncKey(std::make_shared<BotanSecureByteKey>(new BotanSecureByteKey(encKeyBuff, EB_COM_KEY_SIZE)));
+
+    // MacKey, mandatory.
+    attr = {CKA_SHSM_UO_MACKEY, (void *) &macKeyBuff, EB_COM_KEY_SIZE};
+    shsmRet = db->getAttribute(hKey, &attr);
+    if (shsmRet != CKR_OK || attr.ulValueLen != EB_COM_KEY_SIZE){
+        ERROR_MSG("buildShsmUserObjectInfo", "Could not get attribute CKA_SHSM_UO_MACKEY");
+        return nullptr;
+    }
+    uo->setMacKey(std::make_shared<BotanSecureByteKey>(new BotanSecureByteKey(macKeyBuff, EB_COM_KEY_SIZE)));
+
+    // ApiKey [optional]
+    attr = {CKA_SHSM_UO_APIKEY, (void *) &apiKeyBuff, EB_API_KEY_SIZE};
+    shsmRet = db->getAttribute(hKey, &attr);
+    if (shsmRet == CKR_OK){
+        if (attr.ulValueLen >= EB_API_KEY_SIZE){
+            ERROR_MSG("buildShsmUserObjectInfo", "ApiKey too big");
+        } else {
+            uo->setApiKey(std::make_shared<std::string>(new std::string(reinterpret_cast<char const*>(apiKeyBuff), attr.ulValueLen)));
+        }
+    }
+
+    // Hostname [optional]
+    attr = {CKA_SHSM_UO_HOSTNAME, (void *) &hostnameBuff, EB_HOSTNAME_SIZE};
+    shsmRet = db->getAttribute(hKey, &attr);
+    if (shsmRet == CKR_OK){
+        if (attr.ulValueLen >= EB_HOSTNAME_SIZE){
+            ERROR_MSG("buildShsmUserObjectInfo", "Hostname too big");
+        } else {
+            uo->setHostname(std::make_shared<std::string>(new std::string(reinterpret_cast<char const*>(hostnameBuff), attr.ulValueLen)));
+            hasHostname = true;
+        }
+    }
+
+    // If hostname, try port [optional]
+    if (hasHostname){
+        attr = {CKA_SHSM_UO_PORT, (void *) &portNumBuff, sizeof(int)};
+        shsmRet = db->getAttribute(hKey, &attr);
+        if (shsmRet == CKR_OK){
+            uo->setPort(portNumBuff);
+        }
+    }
+
+    // Copy from general configuration.
+    if (slot != NULL && !uo->getApiKey()){
+        uo->setApiKey(std::make_shared<std::string>(new std::string(slot->getApiKey())));
+    }
+
+    if (slot != NULL && !uo->getHostname()){
+        uo->setHostname(std::make_shared<std::string>(new std::string(slot->getHost())));
+        if (uo->getPort() <= 0){
+            uo->setPort(slot->getPort());
+        }
+    }
+
+    return uo;
+}
+
+std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, const Botan::byte byte[], size_t t) {
+    // TODO: separate building a process data request from the private key. UO is enough. Make more abstract.
     // Generate JSON request here.
     // 8B freshness nonce first.
     Botan::byte nonceBytes[FRESHNESS_NONCE_LEN];
     ShsmApiUtils::generateNonceBytes(nonceBytes, FRESHNESS_NONCE_LEN);
     std::string finalNonce = ShsmApiUtils::bytesToHex(nonceBytes, FRESHNESS_NONCE_LEN);
 
+    const std::shared_ptr<ShsmUserObjectInfo> uo = privKey->getUo();
+    if (!uo){
+        ERROR_MSG("getRequestDecrypt", "Empty UO");
+        return "";
+    }
+
     // Request body
     Json::Value jReq;
     jReq["function"] = "ProcessData";
     jReq["version"] = "1.0";
-    jReq["objectid"] = ShsmApiUtils::generateApiObjectId(apiKey, privKey->getKeyId());
+    jReq["objectid"] = ShsmApiUtils::generateApiObjectId(*(uo->getApiKey()), privKey->getKeyId());
     jReq["nonce"] = finalNonce;
     const int keyId = (int) privKey->getKeyId();
 
@@ -63,30 +160,22 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ap
     jReq["objectid"] = buf;
 
     std::ostringstream dataBuilder;
-    // TODO: correct packet header, according to the key type.
+
     // _0000 is the length of plain data, 2B.
-    dataBuilder << "Packet0_RSA2048_0000";
+    dataBuilder << "Packet0_RSA" << privKey->getBigN().bits() << "_0000";
 
     // AES-256-CBC-PKCS7 encrypt data for decryption.
     // IV is null for now, freshness nonce is used as IV, some kind of.
     Botan::byte iv[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    Botan::byte encKey[32];
-    size_t keySize = ShsmApiUtils::hexToBytes(key, encKey, 32);
-    Botan::SecureVector<Botan::byte> tSecVector(encKey, 32);
-    if (keySize != 32){
-        ERROR_MSG("getRequestDecrypt", "AES key size is invalid");
+    const std::shared_ptr<BotanSecureByteKey> encKey = uo->getEncKey();
+    const std::shared_ptr<BotanSecureByteKey> macKey = uo->getMacKey();
+    if (!encKey || !macKey){
+        ERROR_MSG("getRequestDecrypt", "Empty keys");
+        return "";
     }
 
-    // Prepare AES-CBC-MAC key
-    Botan::byte macKeyBuff[32];
-    size_t macKeySize = ShsmApiUtils::hexToBytes(macKey, macKeyBuff, 32);
-    Botan::SecureVector<Botan::byte> tMacVector(macKeyBuff, 32);
-    if (macKeySize != 32){
-        ERROR_MSG("getRequestDecrypt", "AES MAC key size is invalid");
-    }
-
-    Botan::SymmetricKey aesKey(tSecVector);
-    Botan::SymmetricKey aesMacKey(tMacVector);
+    Botan::SymmetricKey aesKey(*encKey);
+    Botan::SymmetricKey aesMacKey(*macKey);
     Botan::InitializationVector aesIv(iv, 16);
 
     // Encryption & MAC encrypted ciphertext
@@ -144,22 +233,16 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, std::string ap
     return json;
 }
 
-int ShsmUtils::readProtectedData(Botan::byte * buff, size_t size, std::string key, std::string macKey, Botan::SecureVector<Botan::byte> ** result) {
+int ShsmUtils::readProtectedData(Botan::byte * buff, size_t size, BotanSecureByteKey key, BotanSecureByteKey macKey, Botan::SecureVector<Botan::byte> ** result) {
     // AES-256-CBC encrypt data for decryption.
     // IV is null for now, but freshness nonce in the first block imitates IV into some extent.
     Botan::byte iv[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    Botan::byte encKeyBuff[32];
-    Botan::byte macKeyBuff[32];
-    size_t keySize = ShsmApiUtils::hexToBytes(key, encKeyBuff, 32);
-    Botan::SecureVector<Botan::byte> tSecVector(encKeyBuff, 32);
-    size_t macKeySize = ShsmApiUtils::hexToBytes(macKey, macKeyBuff, 32);
-    Botan::SecureVector<Botan::byte> tMacVector(macKeyBuff, 32);
-    if (keySize != 32 || macKeySize != 32){
+    if (key.size() != 32 || macKey.size() != 32){
         ERROR_MSG("getRequestDecrypt", "AES (enc or mac) key size is invalid");
     }
 
-    Botan::SymmetricKey aesKey(tSecVector);
-    Botan::SymmetricKey aesMacKey(tMacVector);
+    Botan::SymmetricKey aesKey(key);
+    Botan::SymmetricKey aesMacKey(macKey);
     Botan::InitializationVector aesIv(iv, 16);
 
     // Check size, MAC tag is at the end of the message.

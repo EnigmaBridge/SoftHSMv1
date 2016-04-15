@@ -118,11 +118,7 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
 
     // Generate JSON request for decryption.
     Botan::SecureVector<Botan::byte> errRet = Botan::SecureVector<Botan::byte>(0);
-    std::string json = ShsmUtils::getRequestDecrypt(this->privKey,
-                                                    this->connectionConfig->getApiKey(),
-                                                    this->connectionConfig->getKey(),
-                                                    this->connectionConfig->getMacKey(),
-                                                    byte, t);
+    std::string json = ShsmUtils::getRequestDecrypt(this->privKey, byte, t);
 
     // Perform the request.
     int reqResult = 0;
@@ -148,7 +144,7 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
 
     // Check status code.
     unsigned int resultCode = ShsmApiUtils::getStatus(root);
-    if (resultCode != 0x9000u){
+    if (resultCode != 0x9000u){ //TODO: add status code to constants.
         ERROR_MSG("decryptCall", "Result code is not 0x9000, cannot decrypt");
         ERROR_MSGF((TAG"Result code: %x, response: [%s]", resultCode, response.c_str()));
         return errRet;
@@ -189,8 +185,8 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
     int decStatus = ShsmUtils::readProtectedData(
             buff,
             buffSize,
-            this->connectionConfig->getKey(),
-            this->connectionConfig->getMacKey(),
+            *(this->privKey->getUo()->getEncKey()),
+            *(this->privKey->getUo()->getMacKey()),
             &decData);
 
     if (decStatus != 0){

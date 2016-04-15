@@ -9,6 +9,7 @@
 #include "ShsmPrivateKey.h"
 #include "SoftDatabase.h"
 #include <string>
+#include <src/lib/SoftSlot.h>
 
 class ShsmUtils {
 public:
@@ -23,14 +24,19 @@ public:
     static CK_BBOOL isShsmKey(SoftDatabase * db, CK_OBJECT_HANDLE hKey);
 
     /**
+     * Builds user object representation from the object handle, stored in the soft database.
+     */
+    static std::shared_ptr<ShsmUserObjectInfo> buildShsmUserObjectInfo(SoftDatabase *db, CK_OBJECT_HANDLE hKey, SoftSlot * slot = NULL);
+
+    /**
      * Returns request string for decryption query.
      */
-    static std::string getRequestDecrypt(ShsmPrivateKey * privKey, std::string apiKey, std::string key, std::string macKey, const Botan::byte byte[], size_t t);
+    static std::string getRequestDecrypt(ShsmPrivateKey * privKey, const Botan::byte byte[], size_t t);
 
     /**
      * Process ProcessData response, unprotects data, removes rubbish.
      */
-    static int readProtectedData(Botan::byte * buff, size_t size, std::string key, std::string macKey, Botan::SecureVector<Botan::byte> ** result);
+    static int readProtectedData(Botan::byte * buff, size_t size, BotanSecureByteKey key, BotanSecureByteKey macKey, Botan::SecureVector<Botan::byte> ** result);
 
     /**
      * Removes PKCS1.5 padding from the input buffer and places output to the output buffer.

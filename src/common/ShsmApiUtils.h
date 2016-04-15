@@ -12,14 +12,34 @@
 
 // Boolean attribute for private keys, if set to true, the private key is stored in SHSM.
 #define CKA_SHSM_KEY (CKA_VENDOR_DEFINED + 0x100)
+
 // Integer attribute, stores private key handle for SHSM stored private key.
-#define CKA_SHSM_KEY_HANDLE (CKA_VENDOR_DEFINED + 0x101)
+#define CKA_SHSM_UO_HANDLE (CKA_VENDOR_DEFINED + 0x101)
+
+// EncKey to communicate with EB.
+#define CKA_SHSM_UO_ENCKEY (CKA_VENDOR_DEFINED + 0x102)
+
+// MacKey to communicate with EB.
+#define CKA_SHSM_UO_MACKEY (CKA_VENDOR_DEFINED + 0x103)
+
+// API key to access EB API. Can override global configuration.
+#define CKA_SHSM_UO_APIKEY (CKA_VENDOR_DEFINED + 0x104)
+
+// Hostname endpoint of EB API. Can override global configuration.
+#define CKA_SHSM_UO_HOSTNAME (CKA_VENDOR_DEFINED + 0x105)
+
+// Port number endpoint of EB API. Can override global configuration.
+#define CKA_SHSM_UO_PORT (CKA_VENDOR_DEFINED + 0x106)
+
 // RSA private key type stored in SHSM.
 #define CKO_PRIVATE_KEY_SHSM (CKO_VENDOR_DEFINED + CKO_PRIVATE_KEY)
 
 // Type of the SHSM_KEY_HANDLE.
 #define SHSM_KEY_HANDLE long
 #define SHSM_INVALID_KEY_HANDLE -1l
+
+// Botan byte secure vector - shortening
+typedef Botan::SecureVector<Botan::byte> BotanSecureByteKey;
 
 class ShsmApiUtils {
 private:
@@ -85,7 +105,7 @@ public:
     /**
      * Generates API object ID for the request from api key and user object ID
      */
-    static std::string generateApiObjectId(std::string apiKey, SHSM_KEY_HANDLE userObjectId);
+    static std::string generateApiObjectId(const std::string apiKey, SHSM_KEY_HANDLE userObjectId);
 
     /**
      * Generates JSON request for certificate generation.

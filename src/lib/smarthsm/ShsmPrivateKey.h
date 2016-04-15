@@ -4,17 +4,19 @@
 
 #ifndef SOFTHSMV1_PK_HSMPRIVATEKEY_H
 #define SOFTHSMV1_PK_HSMPRIVATEKEY_H
+#include <memory>
 #include <botan/rsa.h>
 #include "ShsmApiUtils.h"
+#include "ShsmUserObjectInfo.h"
 
 class ShsmPrivateKey : public Botan::RSA_PublicKey,
                        public Botan::IF_Scheme_PrivateKey {
 
 public:
 
-    ShsmPrivateKey(const Botan::BigInt n, const Botan::BigInt e, SHSM_KEY_HANDLE keyId) : RSA_PublicKey(n, e),
+    ShsmPrivateKey(const Botan::BigInt n, const Botan::BigInt e, std::shared_ptr<ShsmUserObjectInfo> uoin) : RSA_PublicKey(n, e),
                                                                                  IF_Scheme_PrivateKey(),
-                                                                                 keyId(keyId), bigN(n), bigE(e) { }
+                                                                                 uo(uoin), bigN(n), bigE(e) { }
 
     virtual std::string algo_name() const;
 
@@ -25,11 +27,15 @@ public:
     virtual Botan::MemoryVector<Botan::byte> x509_subject_public_key() const;
 
     SHSM_KEY_HANDLE getKeyId() const {
-        return keyId;
+        return uo ? uo->getKeyId() : SHSM_INVALID_KEY_HANDLE;
     }
 
-    void setKeyId(SHSM_KEY_HANDLE keyId) {
-        ShsmPrivateKey::keyId = keyId;
+    const std::shared_ptr<ShsmUserObjectInfo> &getUo() const {
+        return uo;
+    }
+
+    void setUo(const std::shared_ptr<ShsmUserObjectInfo> &uo) {
+        ShsmPrivateKey::uo = uo;
     }
 
     const Botan::BigInt &getBigN() const {
@@ -41,10 +47,10 @@ public:
     }
 
 protected:
-    // User Object ID to EB for private key operation.
-    SHSM_KEY_HANDLE keyId;
+    // User object ID.
+    std::shared_ptr<ShsmUserObjectInfo> uo;
 
-    // Public parts, moduls, e exponent.
+    // Public parts, modulus, e exponent.
     Botan::BigInt bigN;
     Botan::BigInt bigE;
 };
