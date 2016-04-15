@@ -41,7 +41,10 @@ public:
     }
 
 protected:
+    // User Object ID to EB for private key operation.
     SHSM_KEY_HANDLE keyId;
+
+    // Public parts, moduls, e exponent.
     Botan::BigInt bigN;
     Botan::BigInt bigE;
 };

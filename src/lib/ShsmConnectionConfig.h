@@ -23,14 +23,15 @@ protected:
      */
     std::string apiKey;
 
-
     /**
-     * Encryption key used for communication with SHSM.
+     * Default encryption key used for communication with SHSM.
+     * @deprecated - key is unique to the UO
      */
     std::string key;
 
     /**
-     * MAC key to provide authenticity.
+     * Default MAC key to provide authenticity.
+     * @deprecated - key is unique to the UO
      */
     std::string macKey;
 
