@@ -31,16 +31,16 @@ libsofthsm_la_SOURCES =		main.cpp main.h \
 				../json/jsoncpp.cpp \
 				../common/ShsmApiUtils.h \
 				../common/ShsmApiUtils.cpp \
-				PK_Decryptor_EME_Remote.h \
-				PK_Decryptor_EME_Remote.cpp \
-				ShsmConnectionConfig.h \
-				ShsmConnectionConfig.cpp \
-				ShsmPrivateKey.h \
-				ShsmPrivateKey.cpp \
-				ShsmNullRng.h \
-				ShsmNullRng.cpp \
-				ShsmUtils.h \
-				ShsmUtils.cpp
+				smarthsm/PK_Decryptor_EME_Remote.h \
+				smarthsm/PK_Decryptor_EME_Remote.cpp \
+				smarthsm/ShsmConnectionConfig.h \
+				smarthsm/ShsmConnectionConfig.cpp \
+				smarthsm/ShsmPrivateKey.h \
+				smarthsm/ShsmPrivateKey.cpp \
+				smarthsm/ShsmNullRng.h \
+				smarthsm/ShsmNullRng.cpp \
+				smarthsm/ShsmUtils.h \
+				smarthsm/ShsmUtils.cpp
 
 libsofthsm_la_LIBADD =		@BOTAN_LIBS@ @SQLITE3_LIBS@ @YIELD_LIB@
 libsofthsm_la_LDFLAGS =		-version-info @VERSION_INFO@ \
