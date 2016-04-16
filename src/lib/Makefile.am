@@ -47,6 +47,11 @@ libsofthsm_la_SOURCES =		main.cpp main.h \
 				smarthsm/ShsmProcessDataRequest.cpp
 				smarthsm/ShsmProcessDataRequestBuilder.h \
 				smarthsm/ShsmProcessDataRequestBuilder.cpp
+				smarthsm/ShsmRsaPrivateOperation.h \
+				smarthsm/ShsmRsaPrivateOperation.cpp \
+				smarthsm/ShsmEngine.h \
+				smarthsm/ShsmEngine.cpp
+
 
 libsofthsm_la_LIBADD =		@BOTAN_LIBS@ @SQLITE3_LIBS@ @YIELD_LIB@
 libsofthsm_la_LDFLAGS =		-version-info @VERSION_INFO@ \

@@ -236,9 +236,7 @@ int ShsmUtils::readProtectedData(Botan::byte * buff, size_t size, BotanSecureByt
                ));
 
     // Prepare return object from the processed buffer.
-    *result = new Botan::SecureVector<Botan::byte>(outBuff + 5+ SHSM_FRESHNESS_NONCE_LEN, cipLen - 5 -
-                                                                                                   SHSM_FRESHNESS_NONCE_LEN);
-
+    *result = new Botan::SecureVector<Botan::byte>(outBuff + 5 + SHSM_FRESHNESS_NONCE_LEN, cipLen - 5 - SHSM_FRESHNESS_NONCE_LEN);
     // Deallocate temporary buffer.
     free(outBuff);
 

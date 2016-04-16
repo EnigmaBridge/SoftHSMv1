@@ -79,4 +79,8 @@ add_executable(SoftHSMv1 ${SOURCE_FILES}
         src/lib/smarthsm/ShsmNullRng.cpp
         src/lib/smarthsm/ShsmNullRng.h
         src/lib/smarthsm/ShsmProcessDataRequestBuilder.cpp
-        src/lib/smarthsm/ShsmProcessDataRequestBuilder.h)
+        src/lib/smarthsm/ShsmProcessDataRequestBuilder.h
+        src/lib/smarthsm/ShsmRsaPrivateOperation.cpp
+        src/lib/smarthsm/ShsmRsaPrivateOperation.h
+        src/lib/smarthsm/ShsmEngine.cpp
+        src/lib/smarthsm/ShsmEngine.h)
