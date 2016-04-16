@@ -104,8 +104,10 @@ ShsmProcessDataRequest *ShsmProcessDataRequestBuilder::buildProcessDataRequest(c
 
     pipe.start_msg();
 
+#ifdef EB_DEBUG
     std::string processDataInputStr = ShsmApiUtils::bytesToHex(body, bodyLen);
     DEBUG_MSGF((TAG"ProcessData input req: [%s]", processDataInputStr.c_str()));
+#endif
 
     // Write header of form 0x1f | <UOID-4B>
     Botan::byte dataHeader[5] = {0x1f, 0x0, 0x0, 0x0, 0x0};
@@ -115,7 +117,9 @@ ShsmProcessDataRequest *ShsmProcessDataRequestBuilder::buildProcessDataRequest(c
     pipe.write(body, bodyLen);
     pipe.end_msg();
 
+#ifdef EB_DEBUG
     DEBUG_MSGF((TAG"DataHeader: %x %x %x %x %x keyId: %lu", dataHeader[0], dataHeader[1], dataHeader[2], dataHeader[3], dataHeader[4], (unsigned long)keyId));
+#endif
 
     // Read the output of the Botan pipe.
     Botan::byte * buff = bodyBuff;
@@ -131,11 +135,15 @@ ShsmProcessDataRequest *ShsmProcessDataRequestBuilder::buildProcessDataRequest(c
 
     // Read encrypted data from the pipe.
     size_t cipLen = pipe.read(buff, (bodyLen + 128), 0);
+#ifdef EB_DEBUG
     DEBUG_MSGF((TAG"Encrypted message len: %lu", cipLen));
+#endif
 
     // Read MAC on encrypted data from the pipe
     size_t macLen = pipe.read(buff+cipLen, (bodyLen + 128 - cipLen), 1);
+#ifdef EB_DEBUG
     DEBUG_MSGF((TAG"MAC message len: %lu", macLen));
+#endif
 
     // Add hex-encoded input data here.
     dataBuilder << ShsmApiUtils::bytesToHex(buff, cipLen+macLen);

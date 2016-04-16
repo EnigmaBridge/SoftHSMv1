@@ -38,7 +38,9 @@ BigInt ShsmRsaPrivateOperation::private_op(const BigInt& m) const
         return errRet;
     }
 
+#ifdef EB_DEBUG
     DEBUG_MSGF((TAG"Request [%s]", json.c_str()));
+#endif
 
     // Parse response, extract result, return it.
     Json::Value root;   // 'root' will contain the root value after parsing.
@@ -74,19 +76,22 @@ BigInt ShsmRsaPrivateOperation::private_op(const BigInt& m) const
     size_t pos = resultString.rfind("Packet", std::string::npos);
     std::string decryptedHexCoded = resultString.substr(4 + prefix*2,
                                                         pos == std::string::npos ? resultString.length() - 4 : pos - 4 - prefix*2);
-
+#ifdef EB_DEBUG
     DEBUG_MSGF((TAG"Response, prefix: %lu, hexcoded AES ciphertext: [%s]", prefix, resultString.c_str()));
     DEBUG_MSGF((TAG"Response, without prefix/suffix [%s]", decryptedHexCoded.c_str()));
+#endif
 
     // Allocate memory buffer for decrypted block, convert from hexa string coding to bytes
     const size_t decHexLen = decryptedHexCoded.length();
     const size_t bufferLen = decHexLen / 2;
     Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * bufferLen);
     size_t buffSize = ShsmApiUtils::hexToBytes(decryptedHexCoded, buff, bufferLen);
-    DEBUG_MSGF((TAG"To AES-decrypt, bufflen: %lu, buffsize: %lu", bufferLen, buffSize));
 
+#ifdef EB_DEBUG
+    DEBUG_MSGF((TAG"To AES-decrypt, bufflen: %lu, buffsize: %lu", bufferLen, buffSize));
     std::string toDecryptStr = ShsmApiUtils::bytesToHex(buff, buffSize);
     DEBUG_MSGF((TAG"To AES-decrypt string: %s", toDecryptStr.c_str()));
+#endif
 
     // AES-256-CBC-PKCS7 decrypt
     Botan::SecureVector<Botan::byte> * decData = NULL;
@@ -112,10 +117,11 @@ BigInt ShsmRsaPrivateOperation::private_op(const BigInt& m) const
     free(buff);
 
     // PKCS1.5 padding removal was here, but in pure RSA decrypt operation no padding is added.
+#ifdef EB_DEBUG
     DEBUG_MSGF((TAG"Decrypted data length: %lu", decData->size()));
-
     Botan::byte * b = decData->begin();
     DEBUG_MSGF((TAG"Decrypted, returning buffer of size: %lu %x %x, size of decData: %lu", buffSize, b, b+1, decData->size()));
+#endif
 
     // Allocate new secure vector and return it.
     BigInt intResult = BigInt::decode(decData->begin(), buffSize);

@@ -39,7 +39,7 @@ public:
     }
 
 protected:
-    // User object ID.
+    // User object info.
     std::shared_ptr<ShsmUserObjectInfo> uo;
 };
 

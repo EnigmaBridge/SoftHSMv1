@@ -10,6 +10,8 @@
 #include <json/json.h>
 #include <botan/auto_rng.h>
 
+#define EB_DEBUG 1
+
 // Boolean attribute for private keys, if set to true, the private key is stored in SHSM.
 #define CKA_SHSM_KEY (CKA_VENDOR_DEFINED + 0x100)
 
