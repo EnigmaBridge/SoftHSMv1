@@ -10,7 +10,7 @@ std::string ShsmPrivateKey::algo_name() const {
 }
 
 size_t ShsmPrivateKey::max_input_bits() const {
-    return bigN.bits() - 1;
+    return n.bits() - 1;
 }
 
 Botan::AlgorithmIdentifier ShsmPrivateKey::algorithm_identifier() const {

@@ -47,8 +47,8 @@ void PK_Decryptor_EME_Remote::testCallWithByte(Botan::byte plaintextByte, bool p
     inpPlain[0] = plaintextByte;
 
     // Extract public key from the database.
-    Botan::BigInt bigN = this->privKey->getBigN();
-    Botan::BigInt bigE = this->privKey->getBigE();
+    Botan::BigInt bigN = this->privKey->get_n();
+    Botan::BigInt bigE = this->privKey->get_e();
     Botan::RSA_PublicKey rsaPub(bigN, bigE);
 
     Botan::PK_Encryptor_EME rsaEncryptor(rsaPub, pkcs15padding ? "EME-PKCS1-v1_5" : "Raw");

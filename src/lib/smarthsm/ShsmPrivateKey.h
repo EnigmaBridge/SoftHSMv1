@@ -16,7 +16,7 @@ public:
 
     ShsmPrivateKey(const Botan::BigInt n, const Botan::BigInt e, std::shared_ptr<ShsmUserObjectInfo> uoin) : RSA_PublicKey(n, e),
                                                                                  IF_Scheme_PrivateKey(),
-                                                                                 uo(uoin), bigN(n), bigE(e) { }
+                                                                                 uo(uoin) { }
 
     virtual std::string algo_name() const;
 
@@ -38,21 +38,9 @@ public:
         ShsmPrivateKey::uo = uo;
     }
 
-    const Botan::BigInt &getBigN() const {
-        return bigN;
-    }
-
-    const Botan::BigInt &getBigE() const {
-        return bigE;
-    }
-
 protected:
     // User object ID.
     std::shared_ptr<ShsmUserObjectInfo> uo;
-
-    // Public parts, modulus, e exponent.
-    Botan::BigInt bigN;
-    Botan::BigInt bigE;
 };
 
 
