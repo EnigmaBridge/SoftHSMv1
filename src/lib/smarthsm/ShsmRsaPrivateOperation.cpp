@@ -20,7 +20,7 @@ BigInt ShsmRsaPrivateOperation::private_op(const BigInt& m) const
 
 #ifdef EB_DEBUG
     std::string origPlainStr = ShsmApiUtils::bytesToHex(inputBuff, inputSize);
-    DEBUG_MSGF((TAG"Original size: %lu, Plaintext: [%s]", t, origPlainStr.c_str()));
+    DEBUG_MSGF((TAG"Original size: %lu, Plaintext: [%s]", inputSize, origPlainStr.c_str()));
 #endif
 
     // Generate JSON request for decryption.
