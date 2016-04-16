@@ -54,6 +54,11 @@ public:
      * Demangles nonce in the processData response to the original one.
      */
     static void demangleNonce(Botan::byte *buff, size_t len);
+
+    /**
+     * Adds Shsm crypto engine to Botan, sets preferences.
+     */
+    static void addShsmEngine2Botan();
 };
 
 

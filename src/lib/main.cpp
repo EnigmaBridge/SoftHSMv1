@@ -233,6 +233,7 @@ CK_RV C_Initialize(CK_VOID_PTR pInitArgs) {
   // Init the Botan crypto library
   if(was_initialized == false) {
     Botan::LibraryInitializer::initialize("thread_safe=true");
+    ShsmUtils::addShsmEngine2Botan();
   }
 
   DEBUG_MSG("C_Initialize", "OK");

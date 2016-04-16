@@ -343,3 +343,14 @@ void ShsmUtils::demangleNonce(Botan::byte *buff, size_t len) {
         buff[idx] -= 0x1;
     }
 }
+
+
+void ShsmUtils::addShsmEngine2Botan() {
+    Botan::Algorithm_Factory& af = Botan::Global_State_Management::global_state().algorithm_factory();
+    ShsmEngine * engine = new ShsmEngine;
+
+    af.add_engine(engine);
+    af.set_preferred_provider("RSA", engine->provider_name());
+    af.set_preferred_provider("RSA/Raw", engine->provider_name());
+    af.set_preferred_provider("RSA/PKCS1-1.5", engine->provider_name());
+}
