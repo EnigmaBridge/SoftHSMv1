@@ -14,6 +14,7 @@
 #include <sstream>      // std::ostringstream
 #include "ShsmApiUtils.h"
 #include "ShsmProcessDataRequestBuilder.h"
+#include "ShsmEngine.h"
 #include <json.h>
 #include <botan/block_cipher.h>
 #include <botan/symkey.h>
@@ -60,10 +61,10 @@ std::shared_ptr<ShsmUserObjectInfo> ShsmUtils::buildShsmUserObjectInfo(SoftDatab
 #define EB_HOSTNAME_SIZE 256
 
     // encKey & macKey, apiKey, hostname, portnumber buffers.
-    Botan::byte * encKeyBuff[EB_COM_KEY_SIZE];
-    Botan::byte * macKeyBuff[EB_COM_KEY_SIZE];
-    char * apiKeyBuff[EB_API_KEY_SIZE];
-    char * hostnameBuff[EB_HOSTNAME_SIZE];
+    Botan::byte encKeyBuff[EB_COM_KEY_SIZE];
+    Botan::byte macKeyBuff[EB_COM_KEY_SIZE];
+    char apiKeyBuff[EB_API_KEY_SIZE];
+    char hostnameBuff[EB_HOSTNAME_SIZE];
     int portNumBuff = -1;
     bool hasHostname = false;
 
@@ -73,8 +74,8 @@ std::shared_ptr<ShsmUserObjectInfo> ShsmUtils::buildShsmUserObjectInfo(SoftDatab
     if (shsmRet != CKR_OK || attr.ulValueLen != EB_COM_KEY_SIZE){
         ERROR_MSG("buildShsmUserObjectInfo", "Could not get attribute CKA_SHSM_UO_ENCKEY");
         return nullptr;
-    }
-    uo->setEncKey(std::make_shared<BotanSecureByteKey>(new BotanSecureByteKey(encKeyBuff, EB_COM_KEY_SIZE)));
+    } //Botan::SecureVector<Botan::byte>
+    uo->setEncKey(std::make_shared<BotanSecureByteKey>(encKeyBuff, (size_t)EB_COM_KEY_SIZE));
 
     // MacKey, mandatory.
     attr = {CKA_SHSM_UO_MACKEY, (void *) &macKeyBuff, EB_COM_KEY_SIZE};
@@ -83,7 +84,7 @@ std::shared_ptr<ShsmUserObjectInfo> ShsmUtils::buildShsmUserObjectInfo(SoftDatab
         ERROR_MSG("buildShsmUserObjectInfo", "Could not get attribute CKA_SHSM_UO_MACKEY");
         return nullptr;
     }
-    uo->setMacKey(std::make_shared<BotanSecureByteKey>(new BotanSecureByteKey(macKeyBuff, EB_COM_KEY_SIZE)));
+    uo->setMacKey(std::make_shared<BotanSecureByteKey>(macKeyBuff, (size_t)EB_COM_KEY_SIZE));
 
     // ApiKey [optional]
     attr = {CKA_SHSM_UO_APIKEY, (void *) &apiKeyBuff, EB_API_KEY_SIZE};
@@ -92,7 +93,7 @@ std::shared_ptr<ShsmUserObjectInfo> ShsmUtils::buildShsmUserObjectInfo(SoftDatab
         if (attr.ulValueLen >= EB_API_KEY_SIZE){
             ERROR_MSG("buildShsmUserObjectInfo", "ApiKey too big");
         } else {
-            uo->setApiKey(std::make_shared<std::string>(new std::string(reinterpret_cast<char const*>(apiKeyBuff), attr.ulValueLen)));
+            uo->setApiKey(std::make_shared<std::string>(reinterpret_cast<char const*>(apiKeyBuff), attr.ulValueLen));
         }
     }
 
@@ -103,7 +104,7 @@ std::shared_ptr<ShsmUserObjectInfo> ShsmUtils::buildShsmUserObjectInfo(SoftDatab
         if (attr.ulValueLen >= EB_HOSTNAME_SIZE){
             ERROR_MSG("buildShsmUserObjectInfo", "Hostname too big");
         } else {
-            uo->setHostname(std::make_shared<std::string>(new std::string(reinterpret_cast<char const*>(hostnameBuff), attr.ulValueLen)));
+            uo->setHostname(std::make_shared<std::string>(reinterpret_cast<char const*>(hostnameBuff), attr.ulValueLen));
             hasHostname = true;
         }
     }
@@ -119,11 +120,13 @@ std::shared_ptr<ShsmUserObjectInfo> ShsmUtils::buildShsmUserObjectInfo(SoftDatab
 
     // Copy from general configuration.
     if (slot != NULL && !uo->getApiKey()){
-        uo->setApiKey(std::make_shared<std::string>(new std::string(slot->getApiKey())));
+        std::string apiKey = slot->getApiKey();
+        uo->setApiKey(std::make_shared<std::string>(apiKey));
     }
 
     if (slot != NULL && !uo->getHostname()){
-        uo->setHostname(std::make_shared<std::string>(new std::string(slot->getHost())));
+        std::string hostname = slot->getHost();
+        uo->setHostname(std::make_shared<std::string>(hostname));
         if (uo->getPort() <= 0){
             uo->setPort(slot->getPort());
         }
@@ -132,7 +135,7 @@ std::shared_ptr<ShsmUserObjectInfo> ShsmUtils::buildShsmUserObjectInfo(SoftDatab
     return uo;
 }
 
-std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, const Botan::byte byte[], size_t t) {
+std::string ShsmUtils::getRequestDecrypt(const ShsmPrivateKey *privKey, const Botan::byte byte[], size_t t) {
     const std::shared_ptr<ShsmUserObjectInfo> uo = privKey->getUo();
     if (!uo){
         ERROR_MSG("getRequestDecrypt", "Empty UO");
@@ -140,7 +143,7 @@ std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, const Botan::b
     }
 
     int statusCode = -1;
-    t_eb_request_type reqType = privKey->getBigN().bits() <= 1024 ? EB_REQUEST_RSA1024 : EB_REQUEST_RSA2048;
+    t_eb_request_type reqType = privKey->get_n().bits() <= 1024 ? EB_REQUEST_RSA1024 : EB_REQUEST_RSA2048;
     ShsmProcessDataRequest * req = ShsmProcessDataRequestBuilder::buildProcessDataRequest(byte, t, uo.get(), reqType, NULL, 0, &statusCode);
     if (req == nullptr || statusCode != 0){
         ERROR_MSG("getRequestDecrypt", "Cannot generate requets");

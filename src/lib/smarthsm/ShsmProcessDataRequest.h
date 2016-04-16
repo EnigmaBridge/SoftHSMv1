@@ -19,7 +19,7 @@ public:
     }
 
     Botan::byte *getNonceBytes() const {
-        return nonceBytes;
+        return (Botan::byte *) nonceBytes;
     }
 
 

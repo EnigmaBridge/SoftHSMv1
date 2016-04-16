@@ -12,11 +12,11 @@
 class ShsmProcessDataRequestBuilder {
 public:
     ShsmProcessDataRequestBuilder():
-            statusCode(-1),
             uo(NULL),
             requestType(EB_REQUEST_TYPE_MAX),
             bodyBuff(NULL),
-            bodyBuffLen(0) { }
+            bodyBuffLen(0),
+            statusCode(-1){ }
 
     ShsmProcessDataRequest * buildProcessDataRequest(const Botan::byte *const body, size_t bodyLen);
 
