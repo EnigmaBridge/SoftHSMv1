@@ -74,5 +74,9 @@ add_executable(SoftHSMv1 ${SOURCE_FILES}
         src/common/ShsmApiUtils.h
         src/lib/smarthsm/ShsmUserObjectInfo.cpp
         src/lib/smarthsm/ShsmUserObjectInfo.h
+        src/lib/smarthsm/ShsmProcessDataRequest.cpp
+        src/lib/smarthsm/ShsmProcessDataRequest.h
         src/lib/smarthsm/ShsmNullRng.cpp
-        src/lib/smarthsm/ShsmNullRng.h)
+        src/lib/smarthsm/ShsmNullRng.h
+        src/lib/smarthsm/ShsmProcessDataRequestBuilder.cpp
+        src/lib/smarthsm/ShsmProcessDataRequestBuilder.h)

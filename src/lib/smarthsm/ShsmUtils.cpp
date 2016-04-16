@@ -13,6 +13,7 @@
 #include <iostream>     // std::cout
 #include <sstream>      // std::ostringstream
 #include "ShsmApiUtils.h"
+#include "ShsmProcessDataRequestBuilder.h"
 #include <json.h>
 #include <botan/block_cipher.h>
 #include <botan/symkey.h>
@@ -21,7 +22,6 @@
 #include <botan/lookup.h>
 #define TAG "ShsmUtils: "
 #define MACTAGLEN 16
-#define FRESHNESS_NONCE_LEN 8
 
 CK_BBOOL ShsmUtils::isShsmKey(SoftDatabase *db, CK_OBJECT_HANDLE hKey) {
     return db->getBooleanAttribute(hKey, CKA_SHSM_KEY, CK_FALSE);
@@ -133,104 +133,24 @@ std::shared_ptr<ShsmUserObjectInfo> ShsmUtils::buildShsmUserObjectInfo(SoftDatab
 }
 
 std::string ShsmUtils::getRequestDecrypt(ShsmPrivateKey *privKey, const Botan::byte byte[], size_t t) {
-    // TODO: separate building a process data request from the private key. UO is enough. Make more abstract.
-    // Generate JSON request here.
-    // 8B freshness nonce first.
-    Botan::byte nonceBytes[FRESHNESS_NONCE_LEN];
-    ShsmApiUtils::generateNonceBytes(nonceBytes, FRESHNESS_NONCE_LEN);
-    std::string finalNonce = ShsmApiUtils::bytesToHex(nonceBytes, FRESHNESS_NONCE_LEN);
-
     const std::shared_ptr<ShsmUserObjectInfo> uo = privKey->getUo();
     if (!uo){
         ERROR_MSG("getRequestDecrypt", "Empty UO");
         return "";
     }
 
-    // Request body
-    Json::Value jReq;
-    jReq["function"] = "ProcessData";
-    jReq["version"] = "1.0";
-    jReq["objectid"] = ShsmApiUtils::generateApiObjectId(*(uo->getApiKey()), privKey->getKeyId());
-    jReq["nonce"] = finalNonce;
-    const int keyId = (int) privKey->getKeyId();
-
-    // Object id, long to string.
-    char buf[16] = {0};
-    snprintf(buf, 16, "%d", keyId);
-    jReq["objectid"] = buf;
-
-    std::ostringstream dataBuilder;
-
-    // _0000 is the length of plain data, 2B.
-    dataBuilder << "Packet0_RSA" << privKey->getBigN().bits() << "_0000";
-
-    // AES-256-CBC-PKCS7 encrypt data for decryption.
-    // IV is null for now, freshness nonce is used as IV, some kind of.
-    Botan::byte iv[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    const std::shared_ptr<BotanSecureByteKey> encKey = uo->getEncKey();
-    const std::shared_ptr<BotanSecureByteKey> macKey = uo->getMacKey();
-    if (!encKey || !macKey){
-        ERROR_MSG("getRequestDecrypt", "Empty keys");
+    int statusCode = -1;
+    t_eb_request_type reqType = privKey->getBigN().bits() <= 1024 ? EB_REQUEST_RSA1024 : EB_REQUEST_RSA2048;
+    ShsmProcessDataRequest * req = ShsmProcessDataRequestBuilder::buildProcessDataRequest(byte, t, uo.get(), reqType, NULL, 0, &statusCode);
+    if (req == nullptr || statusCode != 0){
+        ERROR_MSG("getRequestDecrypt", "Cannot generate requets");
         return "";
     }
 
-    Botan::SymmetricKey aesKey(*encKey);
-    Botan::SymmetricKey aesMacKey(*macKey);
-    Botan::InitializationVector aesIv(iv, 16);
+    std::string reqBody = req->getRequest();
+    delete req;
 
-    // Encryption & MAC encrypted ciphertext
-    Botan::Pipe pipe(
-            Botan::get_cipher("AES-256/CBC/PKCS7", aesKey, aesIv, Botan::ENCRYPTION),
-            new Botan::Fork(
-                    // output from encryption goes here, messageId=0
-                    0,
-                    // output of encryption goes to MAC, messageId=1.
-                    new Botan::MAC_Filter("CBC_MAC(AES-256)", aesMacKey)
-            ));
-
-    pipe.start_msg();
-
-    std::string toDecryptStr = ShsmApiUtils::bytesToHex(byte, t);
-    DEBUG_MSGF((TAG"To decode req: [%s]", toDecryptStr.c_str()));
-
-    // Write header of form 0x1f | <UOID-4B>
-    Botan::byte dataHeader[5] = {0x1f, 0x0, 0x0, 0x0, 0x0};
-    ShsmApiUtils::writeInt32ToBuff((unsigned long) keyId, dataHeader + 1);
-    pipe.write(dataHeader, 5);
-    pipe.write(nonceBytes, FRESHNESS_NONCE_LEN); // freshness nonce 8B
-    pipe.write(byte, t);
-    pipe.end_msg();
-
-    DEBUG_MSGF((TAG"DataHeader: %x %x %x %x %x keyId: %lu", dataHeader[0], dataHeader[1], dataHeader[2], dataHeader[3], dataHeader[4], (unsigned long)keyId));
-
-    // Read the output.
-    Botan::byte * buff = (Botan::byte *) malloc(sizeof(Botan::byte) * (t + 128));
-    if (buff == NULL_PTR){
-        ERROR_MSG("getRequestDecrypt", "Could not allocate enough memory for encryption operation");
-        return "";
-    }
-
-    // Read encrypted data from the pipe.
-    size_t cipLen = pipe.read(buff, (t + 128), 0);
-    DEBUG_MSGF((TAG"Encrypted message len: %lu", cipLen));
-
-    // Read MAC on encrypted data from the pipe
-    size_t macLen = pipe.read(buff+cipLen, (t + 128 - cipLen), 1);
-    DEBUG_MSGF((TAG"MAC message len: %lu", macLen));
-
-    // Add hex-encoded input data here.
-    dataBuilder << ShsmApiUtils::bytesToHex(buff, cipLen+macLen);
-
-    // Deallocate temporary buffer.
-    free(buff);
-
-    // ProcessData - add data part.
-    jReq["data"] = dataBuilder.str();
-
-    // Build string request body.
-    Json::FastWriter jWriter;
-    std::string json = jWriter.write(jReq) + "\n"; // EOL at the end of the request.
-    return json;
+    return reqBody;
 }
 
 int ShsmUtils::readProtectedData(Botan::byte * buff, size_t size, BotanSecureByteKey key, BotanSecureByteKey macKey, Botan::SecureVector<Botan::byte> ** result) {
@@ -289,7 +209,7 @@ int ShsmUtils::readProtectedData(Botan::byte * buff, size_t size, BotanSecureByt
 
     // Read header of form 0xf1 | <UOID-4B> | <mangled-freshness-nonce-8B>
     size_t cipLen = pipe.read(outBuff, (size + 64), 0);
-    if (cipLen < 5+FRESHNESS_NONCE_LEN){
+    if (cipLen < 5+ SHSM_FRESHNESS_NONCE_LEN){
         ERROR_MSG("readProtectedData", "Decryption failed, size is too small");
         free(outBuff);
         return -2;
@@ -306,7 +226,7 @@ int ShsmUtils::readProtectedData(Botan::byte * buff, size_t size, BotanSecureByt
     unsigned long userObjectId = ShsmApiUtils::getInt32FromHexString((const char *) outBuff + 1);
 
     // Demangle nonce in the buffer.
-    ShsmUtils::demangleNonce(outBuff+5, FRESHNESS_NONCE_LEN);
+    ShsmUtils::demangleNonce(outBuff+5, SHSM_FRESHNESS_NONCE_LEN);
 
     DEBUG_MSGF((TAG"After decryption: cipLen=%lu, UOid: %04X, nonce %02x%02x%02x%02x%02x%02x%02x%02x", cipLen, userObjectId,
                outBuff[5+0], outBuff[5+1],
@@ -316,7 +236,8 @@ int ShsmUtils::readProtectedData(Botan::byte * buff, size_t size, BotanSecureByt
                ));
 
     // Prepare return object from the processed buffer.
-    *result = new Botan::SecureVector<Botan::byte>(outBuff + 5+FRESHNESS_NONCE_LEN, cipLen - 5 - FRESHNESS_NONCE_LEN);
+    *result = new Botan::SecureVector<Botan::byte>(outBuff + 5+ SHSM_FRESHNESS_NONCE_LEN, cipLen - 5 -
+                                                                                                   SHSM_FRESHNESS_NONCE_LEN);
 
     // Deallocate temporary buffer.
     free(outBuff);

@@ -37,6 +37,29 @@
 // Type of the SHSM_KEY_HANDLE.
 #define SHSM_KEY_HANDLE long
 #define SHSM_INVALID_KEY_HANDLE -1l
+#define SHSM_FRESHNESS_NONCE_LEN 8
+
+// Request types
+const char * EB_REQUEST_TYPES[] = {
+        "PLAINAES",
+        "RSA1024",
+        "RSA2048",
+        "AUTH_HOTP",
+        "AUTH_PASSWD",
+        "AUTH_NEWUSERCTX",
+        "AUTH_UPDATEUSERCTX"
+};
+
+typedef enum t_eb_request_type {
+    EB_REQUEST_PLAINAES=0,
+    EB_REQUEST_RSA1024,
+    EB_REQUEST_RSA2048,
+    EB_REQUEST_AUTH_HOTP,
+    EB_REQUEST_AUTH_PASSWD,
+    EB_REQUEST_AUTH_NEWUSERCTX,
+    EB_REQUEST_AUTH_UPDATEUSERCTX,
+    EB_REQUEST_TYPE_MAX
+} t_eb_request_type;
 
 // Botan byte secure vector - shortening
 typedef Botan::SecureVector<Botan::byte> BotanSecureByteKey;

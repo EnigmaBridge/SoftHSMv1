@@ -29,6 +29,11 @@ public:
     static std::shared_ptr<ShsmUserObjectInfo> buildShsmUserObjectInfo(SoftDatabase *db, CK_OBJECT_HANDLE hKey, SoftSlot * slot = NULL);
 
     /**
+     * Builds ProcessData() request.
+     */
+    static std::string buildProcessDataRequest(ShsmUserObjectInfo * uo, t_eb_request_type requestType, const Botan::byte body[], size_t bodyLen);
+
+    /**
      * Returns request string for decryption query.
      */
     static std::string getRequestDecrypt(ShsmPrivateKey * privKey, const Botan::byte byte[], size_t t);
