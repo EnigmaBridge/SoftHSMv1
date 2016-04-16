@@ -51,6 +51,7 @@
 
 /**
  * Class for PK decryption using remote call to HSM.
+ * @deprecated
  */
 class PK_Decryptor_EME_Remote : public Botan::PK_Decryptor {
 protected:
