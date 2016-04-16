@@ -144,8 +144,8 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
 
     // Check status code.
     unsigned int resultCode = ShsmApiUtils::getStatus(root);
-    if (resultCode != 0x9000u){ //TODO: add status code to constants.
-        ERROR_MSG("decryptCall", "Result code is not 0x9000, cannot decrypt");
+    if (resultCode != EB_RESPONSE_CODE_OK){
+        ERROR_MSG("decryptCall", "Result code is not success, cannot decrypt");
         ERROR_MSGF((TAG"Result code: %x, response: [%s]", resultCode, response.c_str()));
         return errRet;
     }

@@ -61,6 +61,10 @@ typedef enum t_eb_request_type {
     EB_REQUEST_TYPE_MAX
 } t_eb_request_type;
 
+typedef enum t_eb_response_code {
+    EB_RESPONSE_CODE_OK = 0X9000U
+} t_eb_response_code;
+
 // Botan byte secure vector - shortening
 typedef Botan::SecureVector<Botan::byte> BotanSecureByteKey;
 
