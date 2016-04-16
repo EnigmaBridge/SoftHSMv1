@@ -25,6 +25,16 @@
 // TODO: if win32, do differently.
 #include <sys/time.h>
 
+const char * EB_REQUEST_TYPES[] = {
+    "PLAINAES",
+    "RSA1024",
+    "RSA2048",
+    "AUTH_HOTP",
+    "AUTH_PASSWD",
+    "AUTH_NEWUSERCTX",
+    "AUTH_UPDATEUSERCTX"
+};
+
 // PRNG, auto seeded, static.
 Botan::AutoSeeded_RNG ShsmApiUtils::prng;
 

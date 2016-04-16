@@ -40,15 +40,7 @@
 #define SHSM_FRESHNESS_NONCE_LEN 8
 
 // Request types
-const char * EB_REQUEST_TYPES[] = {
-        "PLAINAES",
-        "RSA1024",
-        "RSA2048",
-        "AUTH_HOTP",
-        "AUTH_PASSWD",
-        "AUTH_NEWUSERCTX",
-        "AUTH_UPDATEUSERCTX"
-};
+extern const char * EB_REQUEST_TYPES[];
 
 typedef enum t_eb_request_type {
     EB_REQUEST_PLAINAES=0,
