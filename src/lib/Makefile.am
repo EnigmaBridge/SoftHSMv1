@@ -3,6 +3,7 @@ MAINTAINERCLEANFILES =		$(srcdir)/Makefile.in
 AM_CPPFLAGS =			-I$(srcdir)/cryptoki_compat \
 			-I$(srcdir)/../common \
 			-I$(srcdir)/../json \
+			-I$(srcdir)/smarthsm \
 			-I$(srcdir)/.. \
 				@BOTAN_INCLUDES@ \
 				@SQLITE3_INCLUDES@
@@ -40,13 +41,13 @@ libsofthsm_la_SOURCES =		main.cpp main.h \
 				smarthsm/ShsmNullRng.h \
 				smarthsm/ShsmNullRng.cpp \
 				smarthsm/ShsmUtils.h \
-				smarthsm/ShsmUtils.cpp
+				smarthsm/ShsmUtils.cpp \
 				smarthsm/ShsmUserObjectInfo.h \
-				smarthsm/ShsmUserObjectInfo.cpp
+				smarthsm/ShsmUserObjectInfo.cpp \
 				smarthsm/ShsmProcessDataRequest.h \
-				smarthsm/ShsmProcessDataRequest.cpp
+				smarthsm/ShsmProcessDataRequest.cpp \
 				smarthsm/ShsmProcessDataRequestBuilder.h \
-				smarthsm/ShsmProcessDataRequestBuilder.cpp
+				smarthsm/ShsmProcessDataRequestBuilder.cpp \
 				smarthsm/ShsmRsaPrivateOperation.h \
 				smarthsm/ShsmRsaPrivateOperation.cpp \
 				smarthsm/ShsmEngine.h \
