@@ -11,6 +11,7 @@
 
 using namespace Botan;
 
+#define TAG "ShsmRsaPrivateOperation: "
 BigInt ShsmRsaPrivateOperation::private_op(const BigInt& m) const
 {
     SecureVector<byte> input = BigInt::encode(m);
