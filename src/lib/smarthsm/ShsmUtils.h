@@ -11,6 +11,9 @@
 #include <string>
 #include <src/lib/SoftSlot.h>
 
+/**
+ * Misc SHSM utils.
+ */
 class ShsmUtils {
 public:
     /**

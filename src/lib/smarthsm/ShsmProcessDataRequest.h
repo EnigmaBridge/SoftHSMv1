@@ -9,6 +9,10 @@
 #include <botan/types.h>
 #include <src/common/ShsmApiUtils.h>
 
+/**
+ * Simple wrapper for ProcessData request.
+ * Produced by request builder.
+ */
 class ShsmProcessDataRequest {
 
 public:

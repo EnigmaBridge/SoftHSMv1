@@ -9,6 +9,14 @@
 #include <botan/rsa.h>
 #include "ShsmPrivateKey.h"
 
+/**
+ * Private operation capable of working with ShsmPrivateKey.
+ * Implements signature operation, decryption operation.
+ *
+ * ShsmEngine returns this object to operate on given private key.
+ * This operation performs private operation, which calls remote
+ * SHSM API.
+ */
 class ShsmRsaPrivateOperation : public Botan::PK_Ops::Signature,
                                 public Botan::PK_Ops::Decryption
 {

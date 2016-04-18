@@ -8,6 +8,16 @@
 #include <memory>
 #include <src/common/ShsmApiUtils.h>
 
+/**
+ * User Object data.
+ * User Object (UO) is an SHSM object (e.g., RSA private key, AES encryption key, authentication context ID).
+ *
+ * In order to use UO, client needs UO identifier (handle), API key, endpoint address and port.
+ * Moreover communication keys (encryption, mac) are needed as ProcessData is encrypted+MACed so only
+ * secure elements can read it.
+ *
+ * UO Info stores all necessary information to perform SHSM operation with given UO.
+ */
 class ShsmUserObjectInfo {
 public:
     ShsmUserObjectInfo() : keyId(SHSM_INVALID_KEY_HANDLE), port(-1) { }

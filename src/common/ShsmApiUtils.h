@@ -41,9 +41,8 @@
 #define SHSM_INVALID_KEY_HANDLE -1l
 #define SHSM_FRESHNESS_NONCE_LEN 8
 
-// Request types
+// SHSM Request types
 extern const char * EB_REQUEST_TYPES[];
-
 typedef enum t_eb_request_type {
     EB_REQUEST_PLAINAES=0,
     EB_REQUEST_RSA1024,
@@ -62,6 +61,9 @@ typedef enum t_eb_response_code {
 // Botan byte secure vector - shortening
 typedef Botan::SecureVector<Botan::byte> BotanSecureByteKey;
 
+/**
+ * General SHSM utils for performing basic API requests.
+ */
 class ShsmApiUtils {
 private:
     static Botan::AutoSeeded_RNG prng;

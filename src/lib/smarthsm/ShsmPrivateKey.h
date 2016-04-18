@@ -9,6 +9,14 @@
 #include "ShsmApiUtils.h"
 #include "ShsmUserObjectInfo.h"
 
+/**
+ * Represents private key stored in the SHSM.
+ * Contains public part, implements private key methods.
+ *
+ * Moreover contains UserObject information so the private operation
+ * knows how to use this private key. UserObject information contains e.g.,
+ * handle of the private object inside the SHSM, API key and so on.
+ */
 class ShsmPrivateKey : public Botan::RSA_PublicKey,
                        public Botan::IF_Scheme_PrivateKey {
 

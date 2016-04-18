@@ -9,6 +9,9 @@
 #include "ShsmProcessDataRequest.h"
 #include "ShsmUserObjectInfo.h"
 
+/**
+ * Request builder for ProcessData requests.
+ */
 class ShsmProcessDataRequestBuilder {
 public:
     ShsmProcessDataRequestBuilder():

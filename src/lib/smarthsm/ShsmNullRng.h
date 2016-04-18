@@ -6,6 +6,11 @@
 #define SOFTHSMV1_SHSMNULLRNG_H
 
 #include <botan/rng.h>
+
+/**
+ * Random number generator producing constant output.
+ * Used in unit testing. Do not use in production under any circumstances.
+ */
 class ShsmNullRng : public Botan::RandomNumberGenerator {
 
 public:
