@@ -14,6 +14,7 @@ using namespace Botan;
 #define TAG "ShsmRsaPrivateOperation: "
 BigInt ShsmRsaPrivateOperation::private_op(const BigInt& m) const
 {
+    // TODO: refactor to a separate ProcessData request.
     SecureVector<byte> input = BigInt::encode(m);
     const byte * inputBuff = input.begin();
     const size_t inputSize = input.size();
