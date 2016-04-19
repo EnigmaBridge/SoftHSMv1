@@ -58,12 +58,12 @@ protected:
     /**
      * Connection configuration to use for decryption call.
      */
-    ShsmConnectionConfig * connectionConfig = NULL;
+    ShsmConnectionConfig * connectionConfig;
 
     /**
      * Private key information. Key is stored in HSM, this object contains information to reach it via remote calls.
      */
-    ShsmPrivateKey * privKey = NULL;
+    ShsmPrivateKey * privKey;
 
     /**
      * Keep padding information also here.
