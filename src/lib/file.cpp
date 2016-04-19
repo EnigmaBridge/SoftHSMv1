@@ -95,7 +95,7 @@ CK_RV readConfigFile() {
     return openRes;
   }
 
-  char fileBuf[1024];
+  char fileBuf[4096];
   std::stringstream cfileStream;
 
   // Format in config file
