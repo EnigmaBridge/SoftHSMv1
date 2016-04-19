@@ -11,6 +11,19 @@
 #include <string>
 #include <src/lib/SoftSlot.h>
 
+// Response codes produced by readProtectedData.
+typedef enum t_ebUnwrapProcessDataResponseCode {
+    EB_PROCESSDATA_UNWRAP_STATUS_INVALID_KEYS=-14,
+    EB_PROCESSDATA_UNWRAP_STATUS_DATA_TOO_SHORT=-10,
+    EB_PROCESSDATA_UNWRAP_STATUS_MALFORMED=-11,
+    EB_PROCESSDATA_UNWRAP_STATUS_HMAC_INVALID=-12,
+    EB_PROCESSDATA_UNWRAP_STATUS_DECRYPTION_ERROR=-2,
+    EB_PROCESSDATA_UNWRAP_STATUS_UNEXPECTED_FORMAT=-15,
+    EB_PROCESSDATA_UNWRAP_STATUS_GENERAL_ERROR=-1,
+    EB_PROCESSDATA_UNWRAP_STATUS_SUCCESS=0
+
+}t_ebUnwrapProcessDataResponseCode;
+
 /**
  * Misc SHSM utils.
  */
@@ -38,8 +51,21 @@ public:
 
     /**
      * Process ProcessData response, unprotects data, removes rubbish.
+     * @param buff - buffer with ProcessData response to unwrap.
+     * @param size - size of data in buff to process
+     * @param key - EB encryption communication key for AES-256 decryption.
+     * @param macKey - EB HMAC communication key for HMAC verification.
+     * @param response - unwrapped response will be placed here
+     * @param nonceBuff - buffer where to place extracted nonce from the response. Has to be at least SHSM_FRESHNESS_NONCE_LEN B.
+     *      if NULL, nonce from the response is not used.
+     * @param responseUOID - if non-NULL, user object ID found in the response is written here
+     * @return return code of the operation. 0 returned on success. Negative otherwise.
      */
-    static int readProtectedData(Botan::byte * buff, size_t size, BotanSecureByteKey key, BotanSecureByteKey macKey, Botan::SecureVector<Botan::byte> ** result);
+    static int readProtectedData(Botan::byte * buff, size_t size,
+                                 BotanSecureByteKey key, BotanSecureByteKey macKey,
+                                 Botan::SecureVector<Botan::byte> ** result,
+                                 Botan::byte * nonceBuff = NULL,
+                                 SHSM_KEY_HANDLE * responseUOID = NULL);
 
     /**
      * Removes PKCS1.5 padding from the input buffer and places output to the output buffer.

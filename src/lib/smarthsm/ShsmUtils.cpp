@@ -156,28 +156,37 @@ std::string ShsmUtils::getRequestDecrypt(const ShsmPrivateKey *privKey, const Bo
     return reqBody;
 }
 
-int ShsmUtils::readProtectedData(Botan::byte * buff, size_t size, BotanSecureByteKey key, BotanSecureByteKey macKey, Botan::SecureVector<Botan::byte> ** result) {
+int ShsmUtils::readProtectedData(Botan::byte * buff, size_t size,
+                                 BotanSecureByteKey key, BotanSecureByteKey macKey,
+                                 Botan::SecureVector<Botan::byte> ** result,
+                                 Botan::byte * nonceBuff,
+                                 SHSM_KEY_HANDLE * responseUOID)
+{
+#define NONCEOFFSET 5
+
     // AES-256-CBC encrypt data for decryption.
     // IV is null for now, but freshness nonce in the first block imitates IV into some extent.
-    Botan::byte iv[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    const Botan::byte iv[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     if (key.size() != 32 || macKey.size() != 32){
         ERROR_MSG("getRequestDecrypt", "AES (enc or mac) key size is invalid");
+        return EB_PROCESSDATA_UNWRAP_STATUS_INVALID_KEYS;
     }
 
-    Botan::SymmetricKey aesKey(key);
-    Botan::SymmetricKey aesMacKey(macKey);
-    Botan::InitializationVector aesIv(iv, 16);
+    const Botan::SymmetricKey aesKey(key);
+    const Botan::SymmetricKey aesMacKey(macKey);
+    const Botan::InitializationVector aesIv(iv, 16);
 
     // Check size, MAC tag is at the end of the message.
     if (size < (16+MACTAGLEN)){
         ERROR_MSG("readProtectedData", "Input data too short");
-        return -10;
+        return EB_PROCESSDATA_UNWRAP_STATUS_DATA_TOO_SHORT;
     }
 
     // Get the MAC tag from the message.
-    Botan::byte * givenMac = buff+(size-MACTAGLEN);
+    const Botan::byte * givenMac = buff+(size-MACTAGLEN);
 
     // Decryption + MAC computation.
+    // Ciphertext is forked to decryption routine and to HMAC computation routine.
     Botan::Pipe pipe(
             new Botan::Fork(
                     // output from decryption goes here, messageId=0
@@ -194,56 +203,65 @@ int ShsmUtils::readProtectedData(Botan::byte * buff, size_t size, BotanSecureByt
     size_t computedMacSize = pipe.read(computedMac, MACTAGLEN, 1);
     if (computedMacSize != MACTAGLEN){
         ERROR_MSG("readProtectedData", "Computed MAC tag is invalid");
-        return -11;
+        return EB_PROCESSDATA_UNWRAP_STATUS_MALFORMED;
     }
 
     // Compare the MAC.
     if (memcmp(givenMac, computedMac, MACTAGLEN) != 0){
         ERROR_MSG("readProtectedData", "MAC invalid");
-        return -12;
+        return EB_PROCESSDATA_UNWRAP_STATUS_HMAC_INVALID;
     }
 
     // Read the output.
     Botan::byte * outBuff = (Botan::byte *) malloc(sizeof(Botan::byte) * (size + 64));
     if (buff == NULL_PTR){
         ERROR_MSG("readProtectedData", "Could not allocate enough memory for decryption operation");
-        return -1;
+        return EB_PROCESSDATA_UNWRAP_STATUS_GENERAL_ERROR;
     }
 
     // Read header of form 0xf1 | <UOID-4B> | <mangled-freshness-nonce-8B>
     size_t cipLen = pipe.read(outBuff, (size + 64), 0);
-    if (cipLen < 5+ SHSM_FRESHNESS_NONCE_LEN){
+    if (cipLen < NONCEOFFSET + SHSM_FRESHNESS_NONCE_LEN){
         ERROR_MSG("readProtectedData", "Decryption failed, size is too small");
         free(outBuff);
-        return -2;
+        return EB_PROCESSDATA_UNWRAP_STATUS_DECRYPTION_ERROR;
     }
 
     // Check the flag, has to be 0xf1
     if (outBuff[0] != 'f' || outBuff[1] != '1'){
         ERROR_MSG("readProtectedData", "Invalid message block format");
         free(outBuff);
-        return -15;
+        return EB_PROCESSDATA_UNWRAP_STATUS_UNEXPECTED_FORMAT;
     }
 
     // Read user object ID from he buffer.
-    unsigned long userObjectId = ShsmApiUtils::getInt32FromHexString((const char *) outBuff + 1);
+    SHSM_KEY_HANDLE userObjectId = (SHSM_KEY_HANDLE) ShsmApiUtils::getInt32FromHexString((const char *) outBuff + 1);
+    if (responseUOID != NULL){
+        *responseUOID = userObjectId;
+    }
 
     // Demangle nonce in the buffer.
-    ShsmUtils::demangleNonce(outBuff+5, SHSM_FRESHNESS_NONCE_LEN);
+    ShsmUtils::demangleNonce(outBuff+NONCEOFFSET, SHSM_FRESHNESS_NONCE_LEN);
+    if (nonceBuff != NULL){
+        memcpy(nonceBuff, outBuff+NONCEOFFSET, SHSM_FRESHNESS_NONCE_LEN);
+    }
 
+#ifdef EB_DEBUG
     DEBUG_MSGF((TAG"After decryption: cipLen=%lu, UOid: %04X, nonce %02x%02x%02x%02x%02x%02x%02x%02x", cipLen, userObjectId,
-               outBuff[5+0], outBuff[5+1],
-               outBuff[5+2], outBuff[5+3],
-               outBuff[5+4], outBuff[5+5],
-               outBuff[5+5], outBuff[5+6]
+               outBuff[NONCEOFFSET+0], outBuff[NONCEOFFSET+1],
+               outBuff[NONCEOFFSET+2], outBuff[NONCEOFFSET+3],
+               outBuff[NONCEOFFSET+4], outBuff[NONCEOFFSET+5],
+               outBuff[NONCEOFFSET+6], outBuff[NONCEOFFSET+7]
                ));
+#endif
 
     // Prepare return object from the processed buffer.
-    *result = new Botan::SecureVector<Botan::byte>(outBuff + 5 + SHSM_FRESHNESS_NONCE_LEN, cipLen - 5 - SHSM_FRESHNESS_NONCE_LEN);
-    // Deallocate temporary buffer.
+    *result = new Botan::SecureVector<Botan::byte>(outBuff + NONCEOFFSET + SHSM_FRESHNESS_NONCE_LEN,
+                                                   cipLen - NONCEOFFSET - SHSM_FRESHNESS_NONCE_LEN);
+    // Deallocate temporary buffer used for unwrapping ProcessData response.
     free(outBuff);
 
-    return 0;
+    return EB_PROCESSDATA_UNWRAP_STATUS_SUCCESS;
 }
 
 ssize_t ShsmUtils::removePkcs15Padding(const Botan::byte *buff, size_t len, Botan::byte *out, size_t maxLen, int *status) {
