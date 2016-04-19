@@ -1,6 +1,6 @@
-!/bin/sh
+#!/bin/sh
 set -e
-if [ ! -f "$HOME/botan/libbotan-1.10.so" ]; then
+if [ ! -f "$HOME/botan/lib/libbotan-1.10.a" ]; then
   wget http://botan.randombit.net/releases/Botan-1.10.12.tgz && \
   tar -xzvf Botan-1.10.12.tgz                                && \
   cd Botan-1.10.12                                           && \
