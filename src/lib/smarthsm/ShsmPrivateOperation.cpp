@@ -2,7 +2,7 @@
 // Created by Dusan Klinec on 16.04.16.
 //
 
-#include "ShsmRsaPrivateOperation.h"
+#include "ShsmPrivateOperation.h"
 #include "PK_Decryptor_EME_Remote.h"
 #include "ShsmUtils.h"
 #include <botan/engine.h>
@@ -12,7 +12,7 @@
 using namespace Botan;
 
 #define TAG "ShsmRsaPrivateOperation: "
-BigInt ShsmRsaPrivateOperation::private_op(const BigInt& m) const
+BigInt ShsmPrivateOperation::private_op(const BigInt& m) const
 {
     // TODO: refactor to a separate ProcessData request.
     SecureVector<byte> input = BigInt::encode(m);

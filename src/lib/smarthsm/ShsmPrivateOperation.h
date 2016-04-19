@@ -17,11 +17,11 @@
  * This operation performs private operation, which calls remote
  * SHSM API.
  */
-class ShsmRsaPrivateOperation : public Botan::PK_Ops::Signature,
+class ShsmPrivateOperation : public Botan::PK_Ops::Signature,
                                 public Botan::PK_Ops::Decryption
 {
 public:
-    ShsmRsaPrivateOperation(const ShsmPrivateKey& rsa) :
+    ShsmPrivateOperation(const ShsmPrivateKey& rsa) :
             privKey(rsa),
             n(rsa.get_n()),
             e(rsa.get_e()),

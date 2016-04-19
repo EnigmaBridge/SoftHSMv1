@@ -48,8 +48,8 @@ libsofthsm_la_SOURCES =		main.cpp main.h \
 				smarthsm/ShsmProcessDataRequest.cpp \
 				smarthsm/ShsmProcessDataRequestBuilder.h \
 				smarthsm/ShsmProcessDataRequestBuilder.cpp \
-				smarthsm/ShsmRsaPrivateOperation.h \
-				smarthsm/ShsmRsaPrivateOperation.cpp \
+				smarthsm/ShsmPrivateOperation.h \
+				smarthsm/ShsmPrivateOperation.cpp \
 				smarthsm/ShsmEngine.h \
 				smarthsm/ShsmEngine.cpp
 

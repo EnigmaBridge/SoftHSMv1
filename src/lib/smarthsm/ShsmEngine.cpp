@@ -4,7 +4,7 @@
 
 #include "ShsmEngine.h"
 #include "ShsmPrivateKey.h"
-#include "ShsmRsaPrivateOperation.h"
+#include "ShsmPrivateOperation.h"
 
 using namespace Botan;
 
@@ -13,7 +13,7 @@ ShsmEngine::get_signature_op(const Private_Key& key) const
 {
 #if defined(BOTAN_HAS_RSA)
     if(const ShsmPrivateKey* s = dynamic_cast<const ShsmPrivateKey*>(&key))
-        return new ShsmRsaPrivateOperation(*s);
+        return new ShsmPrivateOperation(*s);
 #endif
 
     return 0;
@@ -24,7 +24,7 @@ ShsmEngine::get_decryption_op(const Private_Key& key) const
 {
 #if defined(BOTAN_HAS_RSA)
     if(const ShsmPrivateKey* s = dynamic_cast<const ShsmPrivateKey*>(&key))
-        return new ShsmRsaPrivateOperation(*s);
+        return new ShsmPrivateOperation(*s);
 #endif
 
     return 0;
