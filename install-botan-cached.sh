@@ -8,8 +8,8 @@ if [ ! -f "$HOME/botan/libbotan-1.10.so" ]; then
   make                                                       && \
   make install                                               && \
   echo -e "[\E[32m\033[1m OK \033[0m] Botan install Success" || \
-  echo -e "[\E[31m\033[1mFAIL\033[0m] Botan install Failed"  && \
-  exit 1
+  (echo -e "[\E[31m\033[1mFAIL\033[0m] Botan install Failed" && \
+  exit 1)
 else
   echo 'Using cached Botan installation.';
 fi
