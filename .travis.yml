@@ -1,8 +1,44 @@
 language: cpp
+
+# Use container based infrastructure for Travis
+sudo: false
+
 compiler:
   - gcc
   - clang
+
+cache:
+  directories:
+  - $HOME/botan
+
+#before_install:
+#  - sudo apt-get update -qq
+#  - sudo apt-get install build-essential autoconf automake libtool libcppunit-dev libsqlite3-dev sqlite3 libbotan1.10-dev
+# https://docs.travis-ci.com/user/migrating-from-legacy
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    - george-edison55-precise-backports
+    packages:
+    - build-essential
+    - autoconf
+    - automake
+    - libtool
+    - libcppunit-dev
+    - libsqlite3-dev
+    - sqlite3
+    - python #botan
+    - pypy #botan
+
+# TODO: once libbotan1.10-dev is in whitelist, use it.
+
 before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install build-essential autoconf automake libtool libcppunit-dev libsqlite3-dev sqlite3 libbotan1.10-dev
-script: sh .travis.sh
+  - echo $LANG
+  - echo $LC_ALL
+  - bash install-botan-cached.sh
+
+script:
+  - ls -las
+  - ls -las $HOME/botan
+  - sh .travis.sh
