@@ -5,7 +5,9 @@ sudo: false
 
 compiler:
   - gcc
-  - clang
+
+#  Clang disabled for now, not working, build fails on SQLite3: present but cannot be compiled
+#  - clang
 
 cache:
   directories:
