@@ -45,6 +45,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <fstream>
+#include <memory>
 #include <sched.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -848,7 +849,7 @@ int certGenShsm(char *slot, char *userPIN, char *hostname, int port, char *apike
     return 1;
   }
 
-  CK_SLOT_ID slotID = atoi(slot);
+  CK_SLOT_ID slotID = (CK_SLOT_ID) atoi(slot);
   CK_SESSION_HANDLE hSession;
   CK_RV rv = p11->C_OpenSession(slotID, CKF_SERIAL_SESSION | CKF_RW_SESSION, NULL_PTR, NULL_PTR, &hSession);
   if(rv != CKR_OK) {
@@ -882,6 +883,7 @@ int certGenShsm(char *slot, char *userPIN, char *hostname, int port, char *apike
   //
   // Do the request, process response.
   //
+  // TODO: new create user object API, new ENC/MAC keys.
   std::string apiKeyStr(apikey);
   int requestStatus = 0;
   std::string jsonRequest = ShsmApiUtils::getRequestForCertGen(apiKeyStr, bitsize, algname, dn);
@@ -938,9 +940,14 @@ int certGenShsm(char *slot, char *userPIN, char *hostname, int port, char *apike
   // Load provided certificate.
   Botan::DataSource_Memory crtMem((Botan::byte *)crtPEM.c_str(), crtPEM.length());
   Botan::Public_Key * pkey = NULL_PTR;
-  Botan::X509_Certificate * x509Crt = NULL_PTR;
+  std::shared_ptr<Botan::X509_Certificate> x509Crt;
   try {
-    x509Crt = new Botan::X509_Certificate(crtMem);
+    x509Crt = std::make_shared<Botan::X509_Certificate>(crtMem);
+    if (!x509Crt){
+      fprintf(stderr, "Could not load public key from the certificate");
+      return 1;
+    }
+
     pkey = x509Crt->subject_public_key();
   }
   catch(std::exception& e) {
@@ -949,14 +956,8 @@ int certGenShsm(char *slot, char *userPIN, char *hostname, int port, char *apike
     return 1;
   }
 
-  if (x509Crt == NULL_PTR){
-    fprintf(stderr, "Could not load public key from the certificate");
-    return 1;
-  }
-
   if(pkey->algo_name().compare("RSA") != 0) {
     fprintf(stderr, "Error: %s is not a supported algorithm. Only RSA is supported.\n", pkey->algo_name().c_str());
-    delete x509Crt;
     return 1;
   }
 
@@ -1025,8 +1026,6 @@ int certGenShsm(char *slot, char *userPIN, char *hostname, int port, char *apike
           { CKA_TOKEN,            &ckTrue,        sizeof(ckTrue) },
           { CKA_PRIVATE,          &ckTrue,        sizeof(ckTrue) },
           { CKA_EXTRACTABLE,      &ckFalse,       sizeof(ckFalse) },
-          { CKA_SHSM_KEY,         &ckTrue,        sizeof(ckFalse) },
-          { CKA_SHSM_UO_HANDLE,   &privKeyHandle, sizeof(privKeyHandle) },
           { CKA_PUBLIC_EXPONENT,  keyMat->bigE,   keyMat->sizeE },
           { CKA_MODULUS,          keyMat->bigN,   keyMat->sizeN },
           { CKA_PRIVATE_EXPONENT, &zero,          zero.bytes() },
@@ -1034,7 +1033,13 @@ int certGenShsm(char *slot, char *userPIN, char *hostname, int port, char *apike
           { CKA_PRIME_2,          &zero,          zero.bytes() },
           { CKA_EXPONENT_1,       &zero,          zero.bytes() },
           { CKA_EXPONENT_2,       &zero,          zero.bytes() },
-          { CKA_COEFFICIENT,      &zero,          zero.bytes() }
+          { CKA_SHSM_KEY,         &ckTrue,        sizeof(ckFalse) },
+          { CKA_SHSM_UO_HANDLE,   &privKeyHandle, sizeof(privKeyHandle) },
+          { CKA_SHSM_UO_ENCKEY,   &zero,          zero.bytes() },     // TODO: compute & store enc key
+          { CKA_SHSM_UO_MACKEY,   &zero,          zero.bytes() },     // TODO: compute & store mac key
+          { CKA_SHSM_UO_APIKEY,   &zero,          zero.bytes() },     // TODO: store API key used for this key
+          { CKA_SHSM_UO_HOSTNAME, &zero,          zero.bytes() },     // TODO: store hostname used for this key
+          { CKA_SHSM_UO_PORT,     &zero,          zero.bytes() }      // TODO: store port number used for this key
   };
 
   CK_CERTIFICATE_TYPE certType = CKC_X_509;
@@ -1087,7 +1092,6 @@ int certGenShsm(char *slot, char *userPIN, char *hostname, int port, char *apike
 
   rv = p11->C_CreateObject(hSession, certTemplate, 19, &hKey3);
   free(objID);
-  delete x509Crt;
   if(rv != CKR_OK) {
     p11->C_DestroyObject(hSession, hKey1);
     p11->C_DestroyObject(hSession, hKey2);
