@@ -9,8 +9,8 @@
 void ShsmImportRequest::generateCommKeys() {
     commEncKey.resize(SHSM_COMM_KEY_ENC_SIZE);
     commMacKey.resize(SHSM_COMM_KEY_MAC_SIZE);
-    ShsmApiUtils::rng().randomize(commEncKey, SHSM_COMM_KEY_ENC_SIZE);
-    ShsmApiUtils::rng().randomize(commMacKey, SHSM_COMM_KEY_MAC_SIZE);
+    ShsmApiUtils::rng().randomize(commEncKey.begin(), SHSM_COMM_KEY_ENC_SIZE);
+    ShsmApiUtils::rng().randomize(commMacKey.begin(), SHSM_COMM_KEY_MAC_SIZE);
 }
 
 ShsmImportRequest::~ShsmImportRequest() {
@@ -25,7 +25,7 @@ int ShsmImportRequest::setTpl(std::string tplHex) {
     }
 
     this->tpl.resize(len);
-    size_t realSize = ShsmApiUtils::hexToBytes(tplHex, this->tpl, (size_t) len);
+    size_t realSize = ShsmApiUtils::hexToBytes(tplHex, this->tpl.begin(), (size_t) len);
     this->tpl.resize(realSize);
     return 0;
 }

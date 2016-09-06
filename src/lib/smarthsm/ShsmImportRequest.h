@@ -40,12 +40,21 @@ public:
         return tpl;
     }
 
+    BotanSecureByteVector &getTplPrepared() const {
+        return tplPrepared;
+    }
+
+    void setTplPrepared(BotanSecureByteVector &tplPrepared) {
+        ShsmImportRequest::tplPrepared = tplPrepared;
+    }
+
     ssize_t getTplSize() const {
         return tpl.size();
     }
 
 private:
     BotanSecureByteVector tpl;
+    BotanSecureByteVector tplPrepared;
     BotanSecureByteKey commEncKey;
     BotanSecureByteKey commMacKey;
 };
