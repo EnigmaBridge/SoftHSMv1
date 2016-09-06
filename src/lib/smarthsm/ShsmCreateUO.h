@@ -7,6 +7,7 @@
 
 #include <json.h>
 #include <src/lib/SoftSlot.h>
+#include "ShsmImportRequest.h"
 
 namespace createUO {
     namespace consts {
@@ -98,7 +99,32 @@ public:
      */
     static Json::Value templateRequest(SoftSlot * slot, const Json::Value * spec);
 
+    /**
+     * Prepares UO template for import.
+     *
+     * @param slot
+     * @param tplReqSpec
+     * @return
+     */
+    static ShsmImportRequest * processTemplate(SoftSlot * slot,
+                                               const Json::Value * tplReqSpec,
+                                               const Json::Value * tplResp,
+                                               int * statusCode);
 
+    /**
+     * Encrypts template with symmerical keys.
+     * AES-256-CBC + AES-CBC-MAC
+     *
+     * @param encKey
+     * @param macKey
+     * @param buffer
+     * @return
+     */
+    static int encryptTemplate(const BotanSecureByteKey & encKey, const BotanSecureByteKey & macKey,
+                               size_t encOffset,
+                               BotanSecureByteVector & buffer,
+                               BotanSecureByteVector & dest
+    );
 };
 
 

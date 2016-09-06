@@ -44,6 +44,8 @@ libsofthsm_la_SOURCES =		main.cpp main.h \
 				smarthsm/ShsmPrivateKey.cpp \
 				smarthsm/ShsmNullRng.h \
 				smarthsm/ShsmNullRng.cpp \
+				smarthsm/ShsmImportRequest.h \
+				smarthsm/ShsmImportRequest.cpp \
 				smarthsm/ShsmUtils.h \
 				smarthsm/ShsmUtils.cpp \
 				smarthsm/ShsmUserObjectInfo.h \

@@ -77,6 +77,7 @@ typedef enum t_eb_response_code {
 
 // Botan byte secure vector - shortening
 typedef Botan::SecureVector<Botan::byte> BotanSecureByteKey;
+typedef Botan::SecureVector<Botan::byte> BotanSecureByteVector;
 
 /**
  * General SHSM utils for performing basic API requests.

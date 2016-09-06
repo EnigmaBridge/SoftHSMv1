@@ -89,6 +89,6 @@ set(EBFILES
         src/lib/smarthsm/ShsmPrivateOperation.h
         src/lib/smarthsm/ShsmEngine.cpp
         src/lib/smarthsm/ShsmEngine.h
-        )
+        src/lib/smarthsm/ShsmImportRequest.cpp src/lib/smarthsm/ShsmImportRequest.h)
 
 add_executable(SoftHSMv1 ${SOURCE_FILES} ${EBFILES})
