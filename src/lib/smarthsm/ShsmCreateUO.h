@@ -125,6 +125,14 @@ public:
                                BotanSecureByteVector & buffer,
                                BotanSecureByteVector & dest
     );
+
+    /**
+     * Processes import keys and returns the best one to use.
+     *
+     * @param importKeys
+     * @return
+     */
+    static Json::Value getBestImportKey(const Json::Value & importKeys);
 };
 
 

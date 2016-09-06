@@ -240,5 +240,26 @@ int ShsmCreateUO::encryptTemplate(const BotanSecureByteKey & encKey, const Botan
 }
 
 
+Json::Value ShsmCreateUO::getBestImportKey(const Json::Value & importKeys){
+    Json::Value kRsa2048(0);
+    Json::Value kRsa1024(0);
+
+    for(unsigned int idx = 0, len = importKeys.size(); idx < len; ++idx){
+        const Json::Value cKey = importKeys[idx];
+        if (cKey.isNull() || cKey["type"].isNull()){
+            continue;
+        }
+
+        if (kRsa1024.isNull() && cKey["type"].asString() == "rsa1024"){
+            kRsa1024 = cKey;
+        }
+        if (kRsa2048.isNull() && cKey["type"].asString() == "rsa2048"){
+            kRsa2048 = cKey;
+        }
+    }
+
+    return kRsa2048.isNull() ? kRsa1024 : kRsa2048;
+}
+
 
 
