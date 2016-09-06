@@ -386,7 +386,7 @@ int ShsmApiUtils::getIntFromJsonField(Json::Value &root, int * success) {
     return -2;
 }
 
-unsigned int ShsmApiUtils::getUIntFromJsonField(Json::Value &root, int * success) {
+unsigned int ShsmApiUtils::getUIntFromJsonField(const Json::Value &root, int * success) {
     if (root.isNull()){
         if (success != NULL){
             *success = -1;
@@ -413,7 +413,7 @@ unsigned int ShsmApiUtils::getUIntFromJsonField(Json::Value &root, int * success
     return 0;
 }
 
-unsigned int ShsmApiUtils::getHexUint32FromJsonField(Json::Value &root, int *success) {
+unsigned int ShsmApiUtils::getHexUint32FromJsonField(const Json::Value &root, int *success) {
     if (root.isNull()){
         if (success != NULL){
             *success = -1;
@@ -435,6 +435,13 @@ unsigned int ShsmApiUtils::getHexUint32FromJsonField(Json::Value &root, int *suc
             return (unsigned int) ShsmApiUtils::getInt32FromHexString(root.asCString());
         } else if (ln == 4){
             return (unsigned int) ShsmApiUtils::getInt16FromHexString(root.asCString());
+        } else if (ln<8) {
+            const char * orig = root.asCString();
+            char buff[] = "00000000";
+            for(int i = 0; i<ln; i++){
+                buff[8-ln+i] = orig[i];
+            }
+            return (unsigned int) ShsmApiUtils::getInt32FromHexString(root.asCString());
         }
     }
 

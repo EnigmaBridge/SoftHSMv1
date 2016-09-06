@@ -172,12 +172,12 @@ public:
     /**
      * Converts given field to unsigned integer. It may be string-encoded integer or integer.
      */
-    static unsigned int getUIntFromJsonField(Json::Value &root, int * success);
+    static unsigned int getUIntFromJsonField(const Json::Value &root, int * success);
 
     /**
      * Gets hexcoded uint 32 from the JSON field.
      */
-    static unsigned int getHexUint32FromJsonField(Json::Value &root, int *success);
+    static unsigned int getHexUint32FromJsonField(const Json::Value &root, int *success);
 
     /**
      * Extracts status value as an integer from the JSON response.
