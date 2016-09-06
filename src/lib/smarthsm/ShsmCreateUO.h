@@ -133,6 +133,15 @@ public:
      * @return
      */
     static Json::Value getBestImportKey(const Json::Value & importKeys);
+
+    /**
+     * RSA wrapping with the given JSON key.
+     *
+     * @param rsaKey
+     * @param buffer
+     * @return
+     */
+    static int encryptRSA(const Json::Value & rsaKey, BotanSecureByteVector & buffer, BotanSecureByteVector & dest);
 };
 
 

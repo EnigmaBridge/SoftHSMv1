@@ -192,12 +192,34 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
         return nullptr;
     }
 
-    ShsmApiUtils::writeInt32ToBuff(uoid, rsaEncryptInput);
-    memcpy(rsaEncryptInput+4,                  tplEncKey, tplEncKey.size());
-    memcpy(rsaEncryptInput+4+tplEncKey.size(), tplMacKey, tplMacKey.size());
+    ShsmApiUtils::writeInt32ToBuff(uoid, rsaEncryptInput.begin());
+    memcpy(rsaEncryptInput.begin()+4,                  tplEncKey.begin(), tplEncKey.size());
+    memcpy(rsaEncryptInput.begin()+4+tplEncKey.size(), tplMacKey.begin(), tplMacKey.size());
 
     // RSA encryption
+    BotanSecureByteVector rsaEncrypted;
+    res = encryptRSA(iKey, rsaEncryptInput, rsaEncrypted);
+    if (res != 0){
+        ERROR_MSGF((TAG"RSA encryption failed"));
+        if (statusCode) *statusCode = -6;
+        return nullptr;
+    }
 
+    // Final template: 0xa1 | len-2B | RSA-ENC-BLOB | 0xa2 | len-2B | encrypted-maced-template
+    BotanSecureByteVector finalTemplate(6 + rsaEncrypted.size() + encryptedTemplate.size());
+    Botan::byte * finalTemplateBuff = finalTemplate.begin();
+
+    int offset = 0;
+    finalTemplateBuff[offset++] = 0xa1;
+    ShsmApiUtils::writeInt16ToBuff((int)rsaEncrypted.size(), finalTemplateBuff+offset); offset+=2;
+    memcpy(finalTemplateBuff+offset, rsaEncrypted.begin(), rsaEncrypted.size());        offset+=rsaEncrypted.size();
+
+    finalTemplateBuff[offset++] = 0xa2;
+    ShsmApiUtils::writeInt16ToBuff((int)encryptedTemplate.size(), finalTemplateBuff+offset);
+    memcpy(finalTemplateBuff+3, encryptedTemplate.begin(), encryptedTemplate.size());
+
+    // Done
+    req->setTplPrepared(finalTemplate);
     ShsmImportRequest * toReturn = req.get();
     req.release();
     return toReturn;
@@ -253,8 +275,8 @@ int ShsmCreateUO::encryptTemplate(const BotanSecureByteKey & encKey, const Botan
 #endif
 
     dest.resize(cipLen+macLen+encOffset);
-    memcpy(dest, buffer, encOffset);
-    memcpy(dest+encOffset, encryptedData, cipLen+macLen);
+    memcpy(dest.begin(),           buffer.begin(), encOffset);
+    memcpy(dest.begin()+encOffset, encryptedData.begin(), cipLen+macLen);
     return 0;
 }
 
@@ -280,5 +302,7 @@ Json::Value ShsmCreateUO::getBestImportKey(const Json::Value & importKeys){
     return kRsa2048.isNull() ? kRsa1024 : kRsa2048;
 }
 
-
+int ShsmCreateUO::encryptRSA(const Json::Value & rsaKey, BotanSecureByteVector & buffer, BotanSecureByteVector & dest){
+    // TODO: implement.
+}
 
