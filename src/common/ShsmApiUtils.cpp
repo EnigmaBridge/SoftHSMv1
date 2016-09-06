@@ -27,12 +27,19 @@
 
 const char * EB_REQUEST_TYPES[] = {
     "PLAINAES",
+    "PLAINAESDECRYPT",
     "RSA1024",
     "RSA2048",
     "AUTH_HOTP",
     "AUTH_PASSWD",
     "AUTH_NEWUSERCTX",
-    "AUTH_UPDATEUSERCTX"
+    "AUTH_UPDATEUSERCTX",
+    "RANDOMDATA",
+    "CREATENEWUO",
+    "EC_FP192SIGN",
+    "TOKENIZE",
+    "DETOKENIZE",
+    "TOKENIZEWRAP"
 };
 
 // PRNG, auto seeded, static.
