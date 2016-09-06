@@ -48,6 +48,9 @@
 // Length of nonce for ProcessData() request in bytes.
 #define SHSM_FRESHNESS_NONCE_LEN 8
 
+#define SHSM_COMM_KEY_ENC_SIZE 32
+#define SHSM_COMM_KEY_MAC_SIZE 32
+
 // SHSM Request types
 extern const char * EB_REQUEST_TYPES[];
 typedef enum t_eb_request_type {
@@ -244,6 +247,13 @@ public:
      * @return
      */
     static int randomInt();
+
+    /**
+     * Converts static json request to the string.
+     * @param jsonRequest
+     * @return
+     */
+    static std::string json2string(const Json::Value &jsonRequest);
 
     /**
      * Converts static json request to the string.

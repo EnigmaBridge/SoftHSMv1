@@ -564,6 +564,12 @@ int ShsmApiUtils::randomInt() {
     return toReturn;
 }
 
+std::string ShsmApiUtils::json2string(const Json::Value &jsonRequest) {
+    // Build string request body.
+    Json::FastWriter jWriter;
+    return jWriter.write(jsonRequest);
+}
+
 std::string ShsmApiUtils::getRequestBody(const Json::Value &jsonRequest) {
     // Build string request body.
     Json::FastWriter jWriter;
