@@ -32,7 +32,7 @@ public:
     /**
      * Loads SHSM key handle of the object referenced by hKey. Under this value the object is referenced on the SHSM.
      */
-    static SHSM_KEY_HANDLE getShsmKeyHandle(SoftDatabase * db, CK_OBJECT_HANDLE hKey);
+    static int getShsmKeyHandle(SoftDatabase *db, CK_OBJECT_HANDLE hKey, SHSM_KEY_HANDLE * kHnd, SHSM_KEY_TYPE * kType);
 
     /**
      * Returns true if given key is stored in SHSM.
@@ -78,6 +78,13 @@ public:
      * Demangles nonce in the processData response to the original one.
      */
     static void demangleNonce(Botan::byte *buff, size_t len);
+
+    /**
+     * Builds API object identifier from the UO.
+     * @param uo uo
+     * @return api object for request
+     */
+    static std::string buildApiObjectId(ShsmUserObjectInfo * uo);
 
     /**
      * Adds Shsm crypto engine to Botan, sets preferences.

@@ -28,36 +28,57 @@ CK_BBOOL ShsmUtils::isShsmKey(SoftDatabase *db, CK_OBJECT_HANDLE hKey) {
     return db->getBooleanAttribute(hKey, CKA_SHSM_KEY, CK_FALSE);
 }
 
-SHSM_KEY_HANDLE ShsmUtils::getShsmKeyHandle(SoftDatabase *db, CK_OBJECT_HANDLE hKey) {
-    SHSM_KEY_HANDLE shsmHandle = SHSM_INVALID_KEY_HANDLE;
+int ShsmUtils::getShsmKeyHandle(SoftDatabase *db, CK_OBJECT_HANDLE hKey, SHSM_KEY_HANDLE * kHnd, SHSM_KEY_TYPE * kType) {
+    if (kHnd != NULL) {
+        SHSM_KEY_HANDLE shsmHandle = SHSM_INVALID_KEY_HANDLE;
 
-    // Load this attribute via generic DB access call.
-    CK_ATTRIBUTE attr = {CKA_SHSM_UO_HANDLE, (void *) &shsmHandle, sizeof(SHSM_KEY_HANDLE)};
-    CK_RV shsmRet = db->getAttribute(hKey, &attr);
+        // Load this attribute via generic DB access call.
+        CK_ATTRIBUTE attr = {CKA_SHSM_UO_HANDLE, (void *) &shsmHandle, sizeof(SHSM_KEY_HANDLE)};
+        CK_RV shsmRet = db->getAttribute(hKey, &attr);
 
-    if (shsmRet != CKR_OK){
-        ERROR_MSG("getShsmKeyHandle", "Could not get attribute SHSM_KEY_HANDLE");
-        return SHSM_INVALID_KEY_HANDLE;
+        if (shsmRet != CKR_OK) {
+            ERROR_MSG("getShsmKeyHandle", "Could not get attribute SHSM_KEY_HANDLE");
+            return -1;
+        }
+        *kHnd = shsmRet;
     }
 
-    return shsmHandle;
+    if (kType != NULL) {
+        SHSM_KEY_TYPE shsmType = SHSM_INVALID_KEY_TYPE;
+
+        // Load this attribute via generic DB access call.
+        CK_ATTRIBUTE attr = {CKA_SHSM_UO_TYPE, (void *) &shsmType, sizeof(SHSM_KEY_TYPE)};
+        CK_RV shsmRet = db->getAttribute(hKey, &attr);
+
+        if (shsmRet != CKR_OK) {
+            ERROR_MSG("getShsmKeyHandle", "Could not get attribute CKA_SHSM_UO_TYPE");
+            return -1;
+        }
+        *kType = shsmRet;
+    }
+
+    return 0;
 }
 
 std::shared_ptr<ShsmUserObjectInfo> ShsmUtils::buildShsmUserObjectInfo(SoftDatabase *db, CK_OBJECT_HANDLE hKey, SoftSlot * slot) {
     std::shared_ptr<ShsmUserObjectInfo> uo(new ShsmUserObjectInfo());
-    SHSM_KEY_HANDLE shsmHandle = SHSM_INVALID_KEY_HANDLE;
+    CK_ATTRIBUTE attr;
+    CK_RV shsmRet;
 
-    // Load this attribute via generic DB access call.
-    CK_ATTRIBUTE attr = {CKA_SHSM_UO_HANDLE, (void *) &shsmHandle, sizeof(SHSM_KEY_HANDLE)};
-    CK_RV shsmRet = db->getAttribute(hKey, &attr);
-    if (shsmRet != CKR_OK){
+    SHSM_KEY_HANDLE shsmHandle = SHSM_INVALID_KEY_HANDLE;
+    SHSM_KEY_TYPE shsmType = SHSM_INVALID_KEY_TYPE;
+
+    int res = ShsmUtils::getShsmKeyHandle(db, hKey, &shsmHandle, &shsmType);
+    if (res != 0){
         ERROR_MSG("buildShsmUserObjectInfo", "Could not get attribute SHSM_KEY_HANDLE");
         return nullptr;
     }
+
     uo->setKeyId(shsmHandle);
+    uo->setKeyType(shsmType);
 
 #define EB_COM_KEY_SIZE 32
-#define EB_API_KEY_SIZE 64
+#define EB_API_KEY_SIZE 256
 #define EB_HOSTNAME_SIZE 256
 
     // encKey & macKey, apiKey, hostname, portnumber buffers.
@@ -365,6 +386,13 @@ void ShsmUtils::demangleNonce(Botan::byte *buff, size_t len) {
     }
 }
 
+std::string ShsmUtils::buildApiObjectId(ShsmUserObjectInfo * uo){
+    if (uo->getKeyType() != SHSM_INVALID_KEY_TYPE){
+        return ShsmApiUtils::generateApiObjectId(*(uo->getApiKey()), uo->getKeyId(), uo->getKeyType());
+    } else {
+        return ShsmApiUtils::generateApiObjectId(*(uo->getApiKey()), uo->getKeyId());
+    }
+}
 
 void ShsmUtils::addShsmEngine2Botan() {
     Botan::Algorithm_Factory& af = Botan::Global_State_Management::global_state().algorithm_factory();

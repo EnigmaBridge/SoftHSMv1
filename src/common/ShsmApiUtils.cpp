@@ -313,6 +313,14 @@ std::string ShsmApiUtils::generateApiObjectId(const std::string apiKey, SHSM_KEY
     return res.str();
 }
 
+std::string ShsmApiUtils::generateApiObjectId(const std::string apiKey, SHSM_KEY_HANDLE uoId, SHSM_KEY_TYPE uoType){
+    std::stringstream res;
+    res << apiKey;
+    res << std::hex << std::fixed << std::setfill('0') << std::setw(10) << ((unsigned)uoId);
+    res << std::hex << std::fixed << std::setfill('0') << std::setw(10) << ((unsigned)uoType);
+    return res.str();
+}
+
 std::string ShsmApiUtils::getRequestForCertGen(std::string apiKey, long bitsize, const char *alg, const char *dn) {
     // Generate JSON request here.
     Json::Value jReq;

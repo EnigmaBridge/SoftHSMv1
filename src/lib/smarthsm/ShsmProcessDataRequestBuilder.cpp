@@ -9,6 +9,7 @@
 #include "ShsmProcessDataRequestBuilder.h"
 #include "ShsmProcessDataRequest.h"
 #include "ShsmUserObjectInfo.h"
+#include "ShsmUtils.h"
 
 #include <netinet/in.h>
 #include <netdb.h>
@@ -62,14 +63,15 @@ ShsmProcessDataRequest *ShsmProcessDataRequestBuilder::buildProcessDataRequest(c
     Json::Value jReq;
     jReq["function"] = "ProcessData";
     jReq["version"] = "1.0";
-    jReq["objectid"] = ShsmApiUtils::generateApiObjectId(*(uo->getApiKey()), uo->getKeyId());
+    jReq["objectid"] = ShsmUtils::buildApiObjectId(uo);
     jReq["nonce"] = finalNonce;
     const int keyId = (int) uo->getKeyId();
 
-    // Object id, long to string.
-    char buf[16] = {0};
-    snprintf(buf, 16, "%d", keyId);
-    jReq["objectid"] = buf;
+    // TODO: remote, already done above...
+//    // Object id, long to string.
+//    char buf[16] = {0};
+//    snprintf(buf, 16, "%d", keyId);
+//    jReq["objectid"] = buf;
 
     std::ostringstream dataBuilder;
 

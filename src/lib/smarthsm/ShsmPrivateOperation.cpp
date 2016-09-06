@@ -28,7 +28,7 @@ BigInt ShsmPrivateOperation::private_op(const BigInt& m) const
     BigInt errRet = BigInt(0);
     std::string json = ShsmUtils::getRequestDecrypt(&this->privKey, inputBuff, inputSize);
 
-    // Perform the request.
+    // Perform the request. TODO: retry
     int reqResult = 0;
     std::shared_ptr<ShsmUserObjectInfo> uo = this->privKey.getUo();
     std::string response = ShsmApiUtils::request(uo->getHostname()->c_str(),

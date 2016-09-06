@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <src/common/ShsmApiUtils.h>
+#include <src/lib/SoftSlot.h>
 
 /**
  * User Object data.
@@ -20,19 +21,25 @@
  */
 class ShsmUserObjectInfo {
 public:
-    ShsmUserObjectInfo() : keyId(SHSM_INVALID_KEY_HANDLE), port(-1) { }
+    ShsmUserObjectInfo() : keyId(SHSM_INVALID_KEY_HANDLE), keyType(SHSM_INVALID_KEY_TYPE), port(-1), slot(nullptr) { }
 
-    ShsmUserObjectInfo(long keyId) : keyId(keyId), port(-1) { }
+    ShsmUserObjectInfo(SHSM_KEY_HANDLE keyId) : keyId(keyId), port(-1), slot(nullptr) { }
 
-    ShsmUserObjectInfo(long keyId, const std::shared_ptr<BotanSecureByteKey> &encKey,
-                       const std::shared_ptr<BotanSecureByteKey> &macKey) : keyId(keyId), encKey(encKey),
-                                                                            macKey(macKey), port(-1) { }
+    ShsmUserObjectInfo(SHSM_KEY_HANDLE keyId, SHSM_KEY_TYPE keyType,
+                       const std::shared_ptr<BotanSecureByteKey> &encKey,
+                       const std::shared_ptr<BotanSecureByteKey> &macKey) : keyId(keyId), keyType(keyType),
+                                                                            encKey(encKey), macKey(macKey),
+                                                                            port(-1), slot(nullptr) { }
 
-    ShsmUserObjectInfo(long keyId, const std::shared_ptr<BotanSecureByteKey> &encKey,
-                       const std::shared_ptr<BotanSecureByteKey> &macKey, const std::shared_ptr<std::string> &apiKey,
-                       const std::shared_ptr<std::string> &hostname, int port) : keyId(keyId), encKey(encKey),
-                                                                                 macKey(macKey), apiKey(apiKey),
-                                                                                 hostname(hostname), port(port) { }
+    ShsmUserObjectInfo(SHSM_KEY_HANDLE keyId, SHSM_KEY_TYPE keyType,
+                       const std::shared_ptr<BotanSecureByteKey> &encKey,
+                       const std::shared_ptr<BotanSecureByteKey> &macKey,
+                       const std::shared_ptr<std::string> &apiKey,
+                       const std::shared_ptr<std::string> &hostname, int port) : keyId(keyId), keyType(keyType),
+                                                                                 encKey(encKey), macKey(macKey),
+                                                                                 apiKey(apiKey),
+                                                                                 hostname(hostname), port(port),
+                                                                                 slot(nullptr) { }
     // ------------------
     // Getters & setters
     long getKeyId() const {
@@ -41,6 +48,14 @@ public:
 
     void setKeyId(long keyId) {
         ShsmUserObjectInfo::keyId = keyId;
+    }
+
+    long getKeyType() const {
+        return keyType;
+    }
+
+    void setKeyType(long keyType) {
+        ShsmUserObjectInfo::keyType = keyType;
     }
 
     const std::shared_ptr<BotanSecureByteKey> &getEncKey() const {
@@ -83,12 +98,26 @@ public:
         ShsmUserObjectInfo::port = port;
     }
 
+    SoftSlot *getSlot() const {
+        return slot;
+    }
+
+    void setSlot(SoftSlot *slot) {
+        ShsmUserObjectInfo::slot = slot;
+    }
+
 private:
     /**
      * User object identifier in EB.
      * Uniquely identifies particular user object for given API key.
      */
     SHSM_KEY_HANDLE keyId;
+
+    /**
+     * User object type.
+     * Defines supported operation and key generation type.
+     */
+    SHSM_KEY_TYPE keyType;
 
     /**
      * AES-256 symmetric key for communication with EB.
@@ -122,6 +151,14 @@ private:
      * Otherwise, default one is used.
      */
     int port;
+
+    /**
+     * Slot reference. Optional.
+     * Defines the owner of the key.
+     *
+     * Slot can provide default api key, hostname & port values.
+     */
+    SoftSlot * slot;
 };
 
 

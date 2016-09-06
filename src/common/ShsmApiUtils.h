@@ -141,8 +141,14 @@ public:
 
     /**
      * Generates API object ID for the request from api key and user object ID
+     * @deprecated
      */
-    static std::string generateApiObjectId(const std::string apiKey, SHSM_KEY_HANDLE userObjectId);
+    static std::string generateApiObjectId(const std::string apiKey, SHSM_KEY_HANDLE uoId);
+
+    /**
+     * Generates API object ID for the request from api key and user object ID
+     */
+    static std::string generateApiObjectId(const std::string apiKey, SHSM_KEY_HANDLE uoId, SHSM_KEY_TYPE uoType);
 
     /**
      * Generates JSON request for certificate generation.
