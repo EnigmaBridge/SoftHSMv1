@@ -38,8 +38,8 @@
 #define CFG_MACKEY   "mackey"
 
 // Default configuration
-#define CFG_DEFAULT_PORT 11111
-#define CFG_DEFAULT_ENROLL_PORT 11111
+#define CFG_DEFAULT_PORT 11110
+#define CFG_DEFAULT_ENROLL_PORT 11112
 
 #include "SoftSlot.h"
 #include "log.h"
