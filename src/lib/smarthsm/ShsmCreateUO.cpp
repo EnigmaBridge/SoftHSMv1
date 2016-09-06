@@ -100,7 +100,8 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
         || (*tplResp)["result"]["flagoffset"].isNull()
         || (*tplResp)["result"]["keyoffsets"].isNull()
         || (*tplResp)["result"]["importkeys"].isNull()
-        || (*tplResp)["result"]["template"].isNull())
+        || (*tplResp)["result"]["template"].isNull()
+        || (*tplResp)["result"]["objectid"].isNull())
     {
         ERROR_MSGF((TAG"Template response invalid: [%s]", ShsmApiUtils::json2string(*tplResp)));
         if (statusCode) *statusCode = -1;
@@ -164,20 +165,38 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
     int flagOffset = tpl["flagoffset"].asInt() / 8;
     tplBuff[flagOffset + 1] &= ~0x8;
 
+    // Random encryption keys.
+    BotanSecureByteKey tplEncKey = BotanSecureByteVector(32);
+    BotanSecureByteKey tplMacKey = BotanSecureByteVector(32);
+    ShsmApiUtils::rng().randomize(tplEncKey, 32);
+    ShsmApiUtils::rng().randomize(tplMacKey, 32);
 
     // Encrypt part of the buffer.
-    const int encOffset = tpl["encryptionoffset"].asInt() / 8;
+    const size_t encOffset = (size_t)tpl["encryptionoffset"].asInt() / 8;
     BotanSecureByteVector encryptedTemplate;
-    int res = encryptTemplate(req->getCommEncKey(), req->getCommMacKey(), encOffset, tplVector, encryptedTemplate);
+    int res = encryptTemplate(tplEncKey, tplMacKey, encOffset, tplVector, encryptedTemplate);
     if (res != 0){
         ERROR_MSGF((TAG"Encryption failed (sym)"));
         if (statusCode) *statusCode = -4;
         return nullptr;
     }
 
-    // RSA encryption.
-    
+    // Prepare buffer for RSA encryption.
+    Json::Value iKey = ShsmCreateUO::getBestImportKey(tpl["importkeys"]);
+    BotanSecureByteVector rsaEncryptInput(tplEncKey.size() + tplMacKey.size() + 4);
 
+    unsigned int uoid = ShsmApiUtils::getHexUint32FromJsonField(tpl["objectid"], &res);
+    if (res != 0){
+        ERROR_MSGF((TAG"Object id conversion failed"));
+        if (statusCode) *statusCode = -5;
+        return nullptr;
+    }
+
+    ShsmApiUtils::writeInt32ToBuff(uoid, rsaEncryptInput);
+    memcpy(rsaEncryptInput+4,                  tplEncKey, tplEncKey.size());
+    memcpy(rsaEncryptInput+4+tplEncKey.size(), tplMacKey, tplMacKey.size());
+
+    // RSA encryption
 
     ShsmImportRequest * toReturn = req.get();
     req.release();
