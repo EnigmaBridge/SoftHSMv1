@@ -557,3 +557,16 @@ void ShsmApiUtils::gettimespec(struct timespec *ts, uint32_t offset) {
 long ShsmApiUtils::diffTimeMilli(struct timeval *tLow, struct timeval *tHigh) {
     return 1000l * (tHigh->tv_sec - tLow->tv_sec) + (tHigh->tv_usec - tLow->tv_usec) / 1000l;
 }
+
+int ShsmApiUtils::randomInt() {
+    int toReturn = 0;
+    prng.randomize((Botan::byte *) &toReturn, sizeof(int));
+    return toReturn;
+}
+
+std::string ShsmApiUtils::getRequestBody(const Json::Value &jsonRequest) {
+    // Build string request body.
+    Json::FastWriter jWriter;
+    std::string json = jWriter.write(jsonRequest) + "\n"; // EOL at the end of the request.
+    return json;
+}

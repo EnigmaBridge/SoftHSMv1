@@ -232,6 +232,25 @@ public:
      * Computes a difference between tHigh and tLow and returns time in milliseconds.
      */
     static long diffTimeMilli(struct timeval * tLow, struct timeval * tHigh);
+
+    /**
+     * Access to autoseeded rng
+     * @return
+     */
+    static Botan::AutoSeeded_RNG & rng(){ return prng; }
+
+    /**
+     * Generater random integer.
+     * @return
+     */
+    static int randomInt();
+
+    /**
+     * Converts static json request to the string.
+     * @param jsonRequest
+     * @return
+     */
+    static std::string getRequestBody(const Json::Value &jsonRequest);
 };
 
 
