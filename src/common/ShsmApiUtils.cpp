@@ -554,6 +554,11 @@ void ShsmApiUtils::writeInt32ToBuff(unsigned long id, unsigned char *buff) {
     buff[0] = (unsigned char) ((id >> 24) & 0xff);
 }
 
+void ShsmApiUtils::writeInt16ToBuff(int id, unsigned char *buff) {
+    buff[1] = (unsigned char) (id & 0xff);
+    buff[0] = (unsigned char) ((id >> 8 ) & 0xff);
+}
+
 void ShsmApiUtils::gettimespec(struct timespec *ts, uint32_t offset) {
     struct timeval tv;
     (void)gettimeofday(&tv, NULL);

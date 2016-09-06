@@ -228,6 +228,11 @@ public:
     static void writeInt32ToBuff(unsigned long id, unsigned char *buff);
 
     /**
+     * Writes integer to the string on the given pointer. Has to have at least 2 B.
+     */
+    static void writeInt16ToBuff(int id, unsigned char *buff);
+
+    /**
      * Loads current time.
      */
     static void gettimespec(struct timespec *ts, uint32_t offset);
