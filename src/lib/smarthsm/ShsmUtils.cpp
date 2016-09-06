@@ -139,19 +139,22 @@ std::shared_ptr<ShsmUserObjectInfo> ShsmUtils::buildShsmUserObjectInfo(SoftDatab
         }
     }
 
-    // Copy from general configuration.
-    if (slot != NULL && !uo->getApiKey()){
-        std::string apiKey = slot->getApiKey();
-        uo->setApiKey(std::make_shared<std::string>(apiKey));
-    }
+    // Set default slot reference, if no hostname is defined, implementation will use slot's ones.
+    uo->setSlot(slot);
 
-    if (slot != NULL && !uo->getHostname()){
-        std::string hostname = slot->getHost();
-        uo->setHostname(std::make_shared<std::string>(hostname));
-        if (uo->getPort() <= 0){
-            uo->setPort(slot->getPort());
-        }
-    }
+//    // Copy from general configuration.
+//    if (slot != NULL && !uo->getApiKey()){
+//        std::string apiKey = slot->getApiKey();
+//        uo->setApiKey(std::make_shared<std::string>(apiKey));
+//    }
+//
+//    if (slot != NULL && !uo->getHostname()){
+//        std::string hostname = slot->getHost();
+//        uo->setHostname(std::make_shared<std::string>(hostname));
+//        if (uo->getPort() <= 0){
+//            uo->setPort(slot->getPort());
+//        }
+//    }
 
     return uo;
 }
