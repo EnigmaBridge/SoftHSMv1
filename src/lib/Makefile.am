@@ -35,6 +35,10 @@ libsofthsm_la_SOURCES =		main.cpp main.h \
 				smarthsm/PK_Decryptor_EME_Remote.h \
 				smarthsm/PK_Decryptor_EME_Remote.cpp \
 				smarthsm/ShsmConnectionConfig.h \
+				smarthsm/ShsmCreateUO.cpp \
+				smarthsm/ShsmCreateUO.h \
+				smarthsm/Retry.cpp \
+				smarthsm/Retry.h \
 				smarthsm/ShsmConnectionConfig.cpp \
 				smarthsm/ShsmPrivateKey.h \
 				smarthsm/ShsmPrivateKey.cpp \

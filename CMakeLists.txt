@@ -59,13 +59,18 @@ set(SOURCE_FILES
     src/lib/userhandling.cpp
     src/lib/userhandling.h
     src/lib/util.h
+    src/json/json.h
     src/json/jsoncpp.cpp)
 
-add_executable(SoftHSMv1 ${SOURCE_FILES}
+set(EBFILES
         src/lib/smarthsm/PK_Decryptor_EME_Remote.cpp
         src/lib/smarthsm/PK_Decryptor_EME_Remote.h
+        src/lib/smarthsm/Retry.cpp
+        src/lib/smarthsm/Retry.h
         src/lib/smarthsm/ShsmConnectionConfig.cpp
         src/lib/smarthsm/ShsmConnectionConfig.h
+        src/lib/smarthsm/ShsmCreateUO.cpp
+        src/lib/smarthsm/ShsmCreateUO.h
         src/lib/smarthsm/ShsmPrivateKey.cpp
         src/lib/smarthsm/ShsmPrivateKey.h
         src/lib/smarthsm/ShsmUtils.cpp
@@ -83,4 +88,7 @@ add_executable(SoftHSMv1 ${SOURCE_FILES}
         src/lib/smarthsm/ShsmPrivateOperation.cpp
         src/lib/smarthsm/ShsmPrivateOperation.h
         src/lib/smarthsm/ShsmEngine.cpp
-        src/lib/smarthsm/ShsmEngine.h)
+        src/lib/smarthsm/ShsmEngine.h
+        )
+
+add_executable(SoftHSMv1 ${SOURCE_FILES} ${EBFILES})
