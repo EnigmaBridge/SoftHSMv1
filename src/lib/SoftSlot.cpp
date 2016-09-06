@@ -30,12 +30,24 @@
 *
 ************************************************************/
 
+#define CFG_HOST  "host"
+#define CFG_PORT  "port"
+#define CFG_ENROLL_PORT  "enrollPort"
+#define CFG_APIKEY   "apikey"
+#define CFG_KEY   "key"
+#define CFG_MACKEY   "mackey"
+
+// Default configuration
+#define CFG_DEFAULT_PORT 11111
+#define CFG_DEFAULT_ENROLL_PORT 11111
+
 #include "SoftSlot.h"
 #include "log.h"
 #include "SoftDatabase.h"
 #include "util.h"
 
 #include <stdlib.h>
+#include <src/json/json.h>
 
 SoftSlot::SoftSlot() {
   dbPath = NULL_PTR;
@@ -50,8 +62,10 @@ SoftSlot::SoftSlot() {
   hashedSOPIN = NULL_PTR;
   host = "";
   port = -1;
+  enrollPort = -1;
   key = "";
   macKey = "";
+  config = NULL_PTR;
 }
 
 SoftSlot::~SoftSlot() {
@@ -62,11 +76,13 @@ SoftSlot::~SoftSlot() {
   DELETE_PTR(nextSlot);
   FREE_PTR(hashedUserPIN);
   FREE_PTR(hashedSOPIN);
+  FREE_PTR(config);
 }
 
 // Add a new slot last in the chain
 
-void SoftSlot::addSlot(CK_SLOT_ID newSlotID, char *newDBPath, std::string host, int port, std::string apiKey, std::string key, std::string macKey) {
+void SoftSlot::addSlot(CK_SLOT_ID newSlotID, char *newDBPath, const Json::Value * config) {
+
   if(nextSlot == NULL_PTR) {
     nextSlot = new SoftSlot();
     slotID = newSlotID;
@@ -76,6 +92,19 @@ void SoftSlot::addSlot(CK_SLOT_ID newSlotID, char *newDBPath, std::string host, 
     this->apiKey = apiKey;
     this->key = key;
     this->macKey = macKey;
+    if (config != NULL_PTR){
+        this->config = new Json::Value(*config);
+
+        // SHSM configuration.
+        if (!(*config)[CFG_HOST].isNull()) {
+            this->host = (*config)[CFG_HOST].asString();
+            this->port = (*config)[CFG_PORT].isNull() ? CFG_DEFAULT_PORT : (*config)[CFG_PORT].asInt();
+            this->enrollPort = (*config)[CFG_ENROLL_PORT].isNull() ? CFG_DEFAULT_ENROLL_PORT : (*config)[CFG_ENROLL_PORT].asInt();
+            this->apiKey = (*config)[CFG_APIKEY].isNull() ? "" : (*config)[CFG_APIKEY].asString();
+            this->key = (*config)[CFG_KEY].isNull() ? "" : (*config)[CFG_KEY].asString();
+            this->macKey = (*config)[CFG_MACKEY].isNull() ? "" : (*config)[CFG_MACKEY].asString();
+        }
+    }
 
     readDB();
   } else {
@@ -85,12 +114,12 @@ void SoftSlot::addSlot(CK_SLOT_ID newSlotID, char *newDBPath, std::string host, 
       return;
     }
 
-    nextSlot->addSlot(newSlotID, newDBPath, host, port, apiKey, key, macKey);
+    nextSlot->addSlot(newSlotID, newDBPath, config);
   }
 }
 
 void SoftSlot::addSlot(CK_SLOT_ID newSlotID, char *newDBPath) {
-  this->addSlot(newSlotID, newDBPath, "", -1, "", "", "");
+  this->addSlot(newSlotID, newDBPath, NULL_PTR);
 }
 
 // Find the slot with a given ID

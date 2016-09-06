@@ -39,6 +39,7 @@
 
 // Includes for the crypto library
 #include <botan/rng.h>
+#include <src/json/json.h>
 
 class SoftSlot {
   public:
@@ -46,7 +47,8 @@ class SoftSlot {
     ~SoftSlot();
 
     void addSlot(CK_SLOT_ID newSlotID, char *newDBPath);
-    void addSlot(CK_SLOT_ID newSlotID, char *newDBPath, std::string host, int port, std::string apiKey, std::string key, std::string macKey);
+    void addSlot(CK_SLOT_ID newSlotID, char *newDBPath, const Json::Value * config);
+
     SoftSlot *getSlot(CK_SLOT_ID getID);
     SoftSlot *getNextSlot();
     CK_SLOT_ID getSlotID();
@@ -65,12 +67,18 @@ class SoftSlot {
 
     std::string host;
     int port;
+    int enrollPort;
     std::string apiKey;
     std::string key;
     std::string macKey;
+    Json::Value * config;
 
     int getPort() const {
       return port;
+    }
+
+    int getEnrollPort() const {
+        return enrollPort;
     }
 
     const std::string &getHost() const {
