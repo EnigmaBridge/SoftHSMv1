@@ -8,6 +8,7 @@
 #include "ShsmApiUtils.h"
 #include "ShsmPrivateKey.h"
 #include "SoftDatabase.h"
+#include "Retry.h"
 #include <string>
 #include <src/lib/SoftSlot.h>
 
@@ -90,6 +91,32 @@ public:
      * Adds Shsm crypto engine to Botan, sets preferences.
      */
     static void addShsmEngine2Botan();
+
+    /**
+     * Millisecond sleep
+     * @param milliseconds
+     */
+    static void sleepcp(int milliseconds);
+
+    /**
+     * Merges one (b) JSON object into another (a).
+     *
+     * @param a dst
+     * @param b src
+     */
+    static void merge(Json::Value& a, const Json::Value& b);
+
+    /**
+     * Performs simple socket request with retry object.
+     *
+     * @param slot
+     * @param retry
+     * @param host
+     * @param port
+     * @param request null json in case of an error.
+     * @return
+     */
+    static Json::Value requestWithRetry(const Retry & retry, const char * host, int port, Json::Value & request);
 };
 
 

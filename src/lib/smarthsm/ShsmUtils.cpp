@@ -15,12 +15,21 @@
 #include "ShsmApiUtils.h"
 #include "ShsmProcessDataRequestBuilder.h"
 #include "ShsmEngine.h"
+#include "Retry.h"
 #include <json.h>
 #include <botan/block_cipher.h>
 #include <botan/symkey.h>
 #include <botan/b64_filt.h>
 #include <botan/engine.h>
 #include <botan/lookup.h>
+
+#include <iostream>
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif // win32
+
 #define TAG "ShsmUtils: "
 #define MACTAGLEN 16
 
@@ -406,3 +415,85 @@ void ShsmUtils::addShsmEngine2Botan() {
     af.set_preferred_provider("RSA/Raw", engine->provider_name());
     af.set_preferred_provider("RSA/PKCS1-1.5", engine->provider_name());
 }
+
+void ShsmUtils::sleepcp(int milliseconds) {
+#ifdef WIN32
+    Sleep(milliseconds);
+#else
+    usleep(((useconds_t)milliseconds) * 1000);
+#endif // win32
+}
+
+void ShsmUtils::merge(Json::Value& a, const Json::Value& b) {
+    if (!a.isObject() || !b.isObject()) return;
+
+    for (const auto& key : b.getMemberNames()) {
+        if (a[key].isObject()) {
+            ShsmUtils::merge(a[key], b[key]);
+        } else {
+            a[key] = b[key];
+        }
+    }
+}
+
+Json::Value ShsmUtils::requestWithRetry(const Retry & retry, const char * host, int port, Json::Value & request) {
+    int curRetry = 0;
+    Json::Value errRet(0); // null error response.
+
+    // Repeat several times.
+    bool success = false;
+    for(; curRetry < retry.getMaxRetry(); curRetry++) {
+        // Not so fast, wait a small amount of time, randomize requests.
+        if (curRetry > 0){
+            retry.sleepJitter();
+        }
+
+        // Generate new nonce with each attempt.
+        request["nonce"] = ShsmApiUtils::generateNonce(8);
+        std::string json = ShsmApiUtils::getRequestBody(request);
+
+        // Perform the request.
+        int reqResult = 0;
+        std::string response = ShsmApiUtils::request(host, port, json, &reqResult);
+        if (reqResult != 0){
+            DEBUG_MSGF((TAG"SHSM network request result failed, code=%d", reqResult));
+            continue;
+        }
+
+#ifdef EB_DEBUG
+        DEBUG_MSGF((TAG"Request [%s]", json.c_str()));
+#endif
+        // Parse response, extract result, return it.
+        Json::Value root;   // 'root' will contain the root value after parsing.
+        Json::Reader reader;
+        bool parsedSuccess = reader.parse(response, root, false);
+        if(!parsedSuccess) {
+            ERROR_MSG(TAG, "Could not read data from socket");
+            ERROR_MSGF((TAG"Response: [%s]", response.c_str()));
+            return errRet;
+        }
+
+        // Check status code.
+        unsigned int resultCode = ShsmApiUtils::getStatus(root);
+        if (resultCode != EB_RESPONSE_CODE_OK){
+            ERROR_MSG(TAG, "Result code is not success, cannot decrypt");
+            ERROR_MSGF((TAG"Result code: %x, response: [%s]", resultCode, response.c_str()));
+            return errRet;
+        }
+
+        // Process result.
+        std::string rawResult = root["result"].asString();
+        std::string resultString = ShsmApiUtils::removeWhiteSpace(rawResult);
+        if (resultString.empty() || resultString.length() < 4){
+            ERROR_MSG(TAG, "Response string is too short.");
+            return errRet;
+        }
+
+        return root;
+    }
+
+    // If here -> without success.
+    return Json::Value(0);
+}
+
+
