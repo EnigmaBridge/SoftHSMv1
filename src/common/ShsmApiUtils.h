@@ -18,6 +18,9 @@
 // Integer attribute, stores private key handle for SHSM stored private key.
 #define CKA_SHSM_UO_HANDLE (CKA_VENDOR_DEFINED + 0x101)
 
+// Integer attribute, stores EB key type
+#define CKA_SHSM_UO_TYPE (CKA_VENDOR_DEFINED + 0x107)
+
 // EncKey to communicate with EB, ProcessData() request.
 #define CKA_SHSM_UO_ENCKEY (CKA_VENDOR_DEFINED + 0x102)
 
@@ -38,7 +41,9 @@
 
 // Type of the SHSM_KEY_HANDLE.
 #define SHSM_KEY_HANDLE long
+#define SHSM_KEY_TYPE long
 #define SHSM_INVALID_KEY_HANDLE -1l
+#define SHSM_INVALID_KEY_TYPE -1l
 
 // Length of nonce for ProcessData() request in bytes.
 #define SHSM_FRESHNESS_NONCE_LEN 8
