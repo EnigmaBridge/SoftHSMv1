@@ -272,8 +272,8 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
     memcpy(finalTemplateBuff+offset, rsaEncrypted.begin(), rsaEncrypted.size());        offset+=rsaEncrypted.size();
 
     finalTemplateBuff[offset++] = 0xa2;
-    ShsmApiUtils::writeInt16ToBuff((int)encryptedTemplate.size(), finalTemplateBuff+offset);
-    memcpy(finalTemplateBuff+3, encryptedTemplate.begin(), encryptedTemplate.size());
+    ShsmApiUtils::writeInt16ToBuff((int)encryptedTemplate.size(), finalTemplateBuff+offset); offset+=2;
+    memcpy(finalTemplateBuff+offset, encryptedTemplate.begin(), encryptedTemplate.size());
 
     // Done
     req->setTplPrepared(finalTemplate);
@@ -309,19 +309,19 @@ int ShsmCreateUO::encryptTemplate(const BotanSecureByteKey & encKey, const Botan
     pipe.write(buffer.begin() + encOffset, (size_t)buffer.size() - encOffset);
     pipe.end_msg();
 
-    // Secure buffer.
+    // Secure buffer - encryption result goes here.
     const size_t encryptedDataBuffSize = buffer.size() - encOffset+128;
     BotanSecureByteVector encryptedData(encryptedDataBuffSize);
 
     // Read encrypted data from the pipe.
     size_t cipLen = pipe.read(encryptedData.begin(), (size_t)encryptedDataBuffSize, 0);
 #ifdef EB_DEBUG
-    DEBUG_MSGF((TAG"Encrypted message len: %lu", cipLen));
+    DEBUG_MSGF((TAG"Encrypted message len: %lu, plain length: %lu", cipLen, encOffset));
 #endif
 
     size_t paddingSize = 16 - ((cipLen + encOffset) % 16);
     BotanSecureByteVector pkcs7Padding(paddingSize);
-    for(int i = 0; i < paddingSize; i++){
+    for(unsigned i = 0; i < paddingSize; ++i){
         pkcs7Padding.begin()[i] = (Botan::byte)paddingSize;
     }
 
@@ -338,7 +338,7 @@ int ShsmCreateUO::encryptTemplate(const BotanSecureByteKey & encKey, const Botan
     size_t macLen = pipeMac.read(macBuffer.begin(), 16);
 
 #ifdef EB_DEBUG
-    DEBUG_MSGF((TAG"MAC message len: %lu, padding length: %lu: ", macLen, paddingSize));
+    DEBUG_MSGF((TAG"MAC message len: %lu, padding length: %lu:, totalWithMac: %lu", macLen, paddingSize, encOffset+cipLen+macLen+paddingSize));
 #endif
 
     int offset = 0;
