@@ -103,7 +103,7 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
         || (*tplResp)["result"]["template"].isNull()
         || (*tplResp)["result"]["objectid"].isNull())
     {
-        ERROR_MSGF((TAG"Template response invalid: [%s]", ShsmApiUtils::json2string(*tplResp)));
+        ERROR_MSGF((TAG"Template response invalid: [%s]", ShsmApiUtils::json2string(*tplResp).c_str()));
         if (statusCode) *statusCode = -1;
         return nullptr;
     }
@@ -129,7 +129,7 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
             || cKeyOff["length"].isNull()
             || cKeyOff["offset"].isNull())
         {
-            ERROR_MSGF(TAG"Key offset broken");
+            ERROR_MSGF((TAG"Key offset broken"));
             if (statusCode) *statusCode = -2;
             return nullptr;
         }
