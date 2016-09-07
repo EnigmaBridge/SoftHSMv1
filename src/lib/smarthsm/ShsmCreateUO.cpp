@@ -453,6 +453,8 @@ ShsmCreateUO::buildImportedObject(SoftSlot *slot, ShsmImportRequest *req, const 
 
     // Set default slot reference, if no hostname is defined, implementation will use slot's ones.
     uo->setSlot(slot);
+
+    if (status) *status = 0;
     return uo;
 }
 
