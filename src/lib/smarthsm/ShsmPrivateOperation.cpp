@@ -20,46 +20,33 @@ BigInt ShsmPrivateOperation::private_op(const BigInt& m) const
     const size_t inputSize = input.size();
 
 #ifdef EB_DEBUG
-    std::string origPlainStr = ShsmApiUtils::bytesToHex(inputBuff, inputSize);
-    DEBUG_MSGF((TAG"Original size: %lu, Plaintext: [%s]", inputSize, origPlainStr.c_str()));
+    {std::string origPlainStr = ShsmApiUtils::bytesToHex(inputBuff, inputSize);
+    DEBUG_MSGF((TAG"Original size: %lu, Plaintext: [%s]", inputSize, origPlainStr.c_str()));}
 #endif
 
     // Generate JSON request for decryption.
     BigInt errRet = BigInt(0);
-    std::string json = ShsmUtils::getRequestDecrypt(&this->privKey, inputBuff, inputSize);
+    Json::Value json = ShsmUtils::getRequestDecrypt(&this->privKey, inputBuff, inputSize);
 
-    // Perform the request. TODO: retry
-    int reqResult = 0;
+    // Perform the request.
     std::shared_ptr<ShsmUserObjectInfo> uo = this->privKey.getUo();
-    std::string response = ShsmApiUtils::request(uo->getHostname()->c_str(),
-                                                 uo->getPort(),
-                                                 json, &reqResult);
-    if (reqResult != 0){
-        DEBUG_MSGF((TAG"SHSM network request result failed, code=%d", reqResult));
+
+    // Request with retry.
+    SoftSlot * slot = uo->getSlot();
+    Retry retry = slot != nullptr ? slot->getRetry() : Retry();
+
+    Json::Value root = ShsmUtils::requestWithRetry(retry, uo->getHostname()->c_str(),
+                                uo->getPort(),
+                                json);
+    if (root.isNull()){
+        DEBUG_MSGF((TAG"SHSM network request result failed"));
         return errRet;
     }
 
 #ifdef EB_DEBUG
-    DEBUG_MSGF((TAG"Request [%s]", json.c_str()));
+    {std::string response = ShsmApiUtils::json2string(root);
+    DEBUG_MSGF((TAG"Request [%s]", response.c_str()));}
 #endif
-
-    // Parse response, extract result, return it.
-    Json::Value root;   // 'root' will contain the root value after parsing.
-    Json::Reader reader;
-    bool parsedSuccess = reader.parse(response, root, false);
-    if(!parsedSuccess) {
-        ERROR_MSG("decryptCall", "Could not read data from socket");
-        ERROR_MSGF((TAG"Response: [%s]", response.c_str()));
-        return errRet;
-    }
-
-    // Check status code.
-    unsigned int resultCode = ShsmApiUtils::getStatus(root);
-    if (resultCode != EB_RESPONSE_CODE_OK){
-        ERROR_MSG("decryptCall", "Result code is not success, cannot decrypt");
-        ERROR_MSGF((TAG"Result code: %x, response: [%s]", resultCode, response.c_str()));
-        return errRet;
-    }
 
     // Process result.
     std::string rawResult = root["result"].asString();
@@ -89,9 +76,9 @@ BigInt ShsmPrivateOperation::private_op(const BigInt& m) const
     size_t buffSize = ShsmApiUtils::hexToBytes(decryptedHexCoded, buff, bufferLen);
 
 #ifdef EB_DEBUG
-    DEBUG_MSGF((TAG"To AES-decrypt, bufflen: %lu, buffsize: %lu", bufferLen, buffSize));
+    {DEBUG_MSGF((TAG"To AES-decrypt, bufflen: %lu, buffsize: %lu", bufferLen, buffSize));
     std::string toDecryptStr = ShsmApiUtils::bytesToHex(buff, buffSize);
-    DEBUG_MSGF((TAG"To AES-decrypt string: %s", toDecryptStr.c_str()));
+    DEBUG_MSGF((TAG"To AES-decrypt string: %s", toDecryptStr.c_str()));}
 #endif
 
     // AES-256-CBC-PKCS7 decrypt
@@ -109,8 +96,8 @@ BigInt ShsmPrivateOperation::private_op(const BigInt& m) const
     }
 
 #ifdef EB_DEBUG
-    std::string decStr = ShsmApiUtils::bytesToHex(decData->begin(), decData->size());
-    DEBUG_MSGF((TAG"RSA-decrypted string: %s", decStr.c_str()));
+    {std::string decStr = ShsmApiUtils::bytesToHex(decData->begin(), decData->size());
+    DEBUG_MSGF((TAG"RSA-decrypted string: %s", decStr.c_str()));}
 #endif
 
     // Adjust data size, padding / aux info may got stripped.

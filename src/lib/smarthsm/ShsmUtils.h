@@ -48,7 +48,7 @@ public:
     /**
      * Returns request string for decryption query.
      */
-    static std::string getRequestDecrypt(const ShsmPrivateKey * privKey, const Botan::byte byte[], size_t t);
+    static Json::Value getRequestDecrypt(const ShsmPrivateKey * privKey, const Botan::byte byte[], size_t t);
 
     /**
      * Process ProcessData response, unprotects data, removes rubbish.

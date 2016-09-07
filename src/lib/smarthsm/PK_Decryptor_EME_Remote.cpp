@@ -118,43 +118,35 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
 
     // Generate JSON request for decryption.
     Botan::SecureVector<Botan::byte> errRet = Botan::SecureVector<Botan::byte>(0);
-    std::string json = ShsmUtils::getRequestDecrypt(this->privKey, byte, t);
+    Json::Value json = ShsmUtils::getRequestDecrypt(this->privKey, byte, t);
 
     // Perform the request.
-    int reqResult = 0;
-    std::string response = ShsmApiUtils::request(this->connectionConfig->getMHost().c_str(),
-                                                 this->connectionConfig->getMPort(),
-                                                 json, &reqResult);
-    if (reqResult != 0){
-        DEBUG_MSGF((TAG"SHSM network request result failed, code=%d", reqResult));
+    std::shared_ptr<ShsmUserObjectInfo> uo = this->privKey->getUo();
+
+    // Request with retry.
+    SoftSlot * slot = uo->getSlot();
+    Retry retry = slot != nullptr ? slot->getRetry() : Retry();
+
+    Json::Value root = ShsmUtils::requestWithRetry(retry, uo->getHostname()->c_str(),
+                                                   uo->getPort(),
+                                                   json);
+    if (root.isNull()){
+        DEBUG_MSGF((TAG"SHSM network request result failed"));
+        if (status) *status = -1;
         return errRet;
     }
 
-    DEBUG_MSGF((TAG"Request [%s]", json.c_str()));
-
-    // Parse response, extract result, return it.
-    Json::Value root;   // 'root' will contain the root value after parsing.
-    Json::Reader reader;
-    bool parsedSuccess = reader.parse(response, root, false);
-    if(!parsedSuccess) {
-        ERROR_MSG("decryptCall", "Could not read data from socket");
-        ERROR_MSGF((TAG"Response: [%s]", response.c_str()));
-        return errRet;
-    }
-
-    // Check status code.
-    unsigned int resultCode = ShsmApiUtils::getStatus(root);
-    if (resultCode != EB_RESPONSE_CODE_OK){
-        ERROR_MSG("decryptCall", "Result code is not success, cannot decrypt");
-        ERROR_MSGF((TAG"Result code: %x, response: [%s]", resultCode, response.c_str()));
-        return errRet;
-    }
+#ifdef EB_DEBUG
+    {std::string response = ShsmApiUtils::json2string(root);
+    DEBUG_MSGF((TAG"Request [%s]", response.c_str()));}
+#endif
 
     // Process result.
     std::string rawResult = root["result"].asString();
     std::string resultString = ShsmApiUtils::removeWhiteSpace(rawResult);
     if (resultString.empty() || resultString.length() < 4){
         ERROR_MSG("decryptCall", "Response string is too short.");
+        if (status) *status = -2;
         return errRet;
     }
 
@@ -191,6 +183,7 @@ Botan::SecureVector<Botan::byte> PK_Decryptor_EME_Remote::decryptCall(const Bota
 
     if (decStatus != 0){
         DEBUG_MSGF((TAG"Failed to read protected data"));
+        if (status) *status = -3;
         return errRet;
     }
 

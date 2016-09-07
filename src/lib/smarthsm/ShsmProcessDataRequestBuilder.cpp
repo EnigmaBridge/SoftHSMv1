@@ -157,11 +157,7 @@ ShsmProcessDataRequest *ShsmProcessDataRequestBuilder::buildProcessDataRequest(c
 
     // ProcessData - add data part.
     jReq["data"] = dataBuilder.str();
-
-    // Build string request body.
-    Json::FastWriter jWriter;
-    std::string json = jWriter.write(jReq) + "\n"; // EOL at the end of the request.
-    request->setRequest(json);
+    request->setRequest(jReq);
 
     if (statusCode) *statusCode = 0;
     return request;

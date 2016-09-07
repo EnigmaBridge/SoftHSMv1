@@ -168,7 +168,7 @@ std::shared_ptr<ShsmUserObjectInfo> ShsmUtils::buildShsmUserObjectInfo(SoftDatab
     return uo;
 }
 
-std::string ShsmUtils::getRequestDecrypt(const ShsmPrivateKey *privKey, const Botan::byte byte[], size_t t) {
+Json::Value ShsmUtils::getRequestDecrypt(const ShsmPrivateKey *privKey, const Botan::byte byte[], size_t t) {
     const std::shared_ptr<ShsmUserObjectInfo> uo = privKey->getUo();
     if (!uo){
         ERROR_MSG("getRequestDecrypt", "Empty UO");
@@ -183,7 +183,7 @@ std::string ShsmUtils::getRequestDecrypt(const ShsmPrivateKey *privKey, const Bo
         return "";
     }
 
-    std::string reqBody = req->getRequest();
+    Json::Value reqBody = req->getRequest();
     delete req;
 
     return reqBody;

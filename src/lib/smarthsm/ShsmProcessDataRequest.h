@@ -18,21 +18,20 @@ class ShsmProcessDataRequest {
 public:
     ShsmProcessDataRequest() { }
 
-    const std::string &getRequest() const {
-        return request;
-    }
-
     Botan::byte *getNonceBytes() const {
         return (Botan::byte *) nonceBytes;
     }
 
+    const Json::Value &getRequest() const {
+        return request;
+    }
 
-    void setRequest(const std::string &request) {
+    void setRequest(const Json::Value &request) {
         ShsmProcessDataRequest::request = request;
     }
 
 private:
-    std::string request;
+    Json::Value request;
     Botan::byte nonceBytes[SHSM_FRESHNESS_NONCE_LEN];
 };
 
