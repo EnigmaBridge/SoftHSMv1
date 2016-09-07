@@ -301,8 +301,8 @@ int ShsmCreateUO::encryptTemplate(const BotanSecureByteKey & encKey, const Botan
     pipe.start_msg();
 
 #ifdef EB_DEBUG
-    {std::string dumpStr = ShsmApiUtils::bytesToHex(buffer.begin(), buffer.size());
-    DEBUG_MSGF((TAG"To process buffer: [%s]", dumpStr.c_str()));}
+    {//std::string dumpStr = ShsmApiUtils::bytesToHex(buffer.begin(), buffer.size());
+    DEBUG_MSGF((TAG"To process buffer len: [%d]", (int)buffer.size()));}
 #endif
 
     // Write header of form 0x1f | <UOID-4B>
