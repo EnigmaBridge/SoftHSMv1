@@ -2875,73 +2875,78 @@ CK_RV rsaKeyGenShsm(SoftSession *session, CK_ATTRIBUTE_PTR pPublicKeyTemplate, C
 {
   CK_ULONG *modulusBits = NULL_PTR;
   // Defaults to an exponent with e = 65537
-  Botan::BigInt *exponent = new Botan::BigInt("65537");;
-  CHECK_DEBUG_RETURN(exponent == NULL_PTR, "C_GenerateKeyPair", "Could not allocate memory", CKR_HOST_MEMORY);
+  std::unique_ptr<Botan::BigInt> exponent(new Botan::BigInt("65537"));
+  CHECK_DEBUG_RETURN(!exponent, "C_GenerateKeyPair", "Could not allocate memory", CKR_HOST_MEMORY);
 
   // Extract desired key information
   for(CK_ULONG i = 0; i < ulPublicKeyAttributeCount; i++) {
     switch(pPublicKeyTemplate[i].type) {
       case CKA_MODULUS_BITS:
         if(pPublicKeyTemplate[i].ulValueLen != sizeof(CK_ULONG)) {
-          delete exponent;
-
           DEBUG_MSG("C_GenerateKeyPair", "CKA_MODULUS_BITS does not have the size of CK_ULONG");
           return CKR_TEMPLATE_INCOMPLETE;
         }
             modulusBits = (CK_ULONG*)pPublicKeyTemplate[i].pValue;
             break;
       case CKA_PUBLIC_EXPONENT:
-        delete exponent;
-            exponent = new Botan::BigInt((Botan::byte*)pPublicKeyTemplate[i].pValue,(Botan::u32bit)pPublicKeyTemplate[i].ulValueLen);
-            // TODO: another modulus (integer)? we do not support this... handle as an error.
+            exponent.reset(new Botan::BigInt((Botan::byte*)pPublicKeyTemplate[i].pValue,(Botan::u32bit)pPublicKeyTemplate[i].ulValueLen));
             break;
       default:
         break;
     }
   }
 
-  // CKA_MODULUS_BITS must be specified to be able to generate a key pair.
-  if(modulusBits == NULL_PTR) {
-    delete exponent;
+  try {
+      // CKA_MODULUS_BITS must be specified to be able to generate a key pair.
+      if (modulusBits == NULL_PTR) {
+          DEBUG_MSG("C_GenerateKeyPair", "Missing CKA_MODULUS_BITS in pPublicKeyTemplate");
+          return CKR_TEMPLATE_INCOMPLETE;
+      }
 
-    DEBUG_MSG("C_GenerateKeyPair", "Missing CKA_MODULUS_BITS in pPublicKeyTemplate");
-    return CKR_TEMPLATE_INCOMPLETE;
+      // Create template specifications, using local config and defaults.
+      int res = 0;
+      SoftSlot *slot = session->currentSlot;
+      std::unique_ptr<ShsmPrivateKey> privKey(
+              ShsmCreateUO::createNewRsaKey(slot, nullptr, (int) *modulusBits, &res)
+      );
+      if (res != 0 || !privKey) {
+          DEBUG_MSGF(("C_GenerateKeyPair: Could not create new RSA key, code: %d", res));
+          return CKR_GENERAL_ERROR;
+      }
+
+      // Add the private key to the database.
+      CK_OBJECT_HANDLE privRef = session->db->addRSAKeyPriv(session->getSessionState(), privKey.get(),
+                                                            pPrivateKeyTemplate, ulPrivateKeyAttributeCount);
+
+      if (privRef == 0) {
+          DEBUG_MSG("C_GenerateKeyPair", "Could not save private key in DB");
+          return CKR_GENERAL_ERROR;
+      }
+
+      // Add the public key to the database.
+      CK_OBJECT_HANDLE pubRef = session->db->addRSAKeyPub(session->getSessionState(), privKey.get(), pPublicKeyTemplate,
+                                                          ulPublicKeyAttributeCount);
+      if (pubRef == 0) {
+          session->db->deleteObject(privRef);
+
+          DEBUG_MSG("C_GenerateKeyPair", "Could not save public key in DB");
+          return CKR_GENERAL_ERROR;
+      }
+
+      // Returns the object handles to the application.
+      *phPublicKey = pubRef;
+      *phPrivateKey = privRef;
+
+      INFO_MSG("C_GenerateKeyPair", "Key pair generated");
+      DEBUG_MSG("C_GenerateKeyPair", "OK");
+      return CKR_OK;
+
+  } catch (const std::exception& ex) {
+      DEBUG_MSGF(("C_GenerateKeyPair: Exception in RSA gen: exc %s", ex.what()));
+  } catch (const std::string& ex) {
+      DEBUG_MSGF(("C_GenerateKeyPair: Exception in RSA gen: str %s", ex.c_str()));
+  } catch (...) {
+      DEBUG_MSGF(("C_GenerateKeyPair: Exception in RSA"));
   }
-
-    // Create template specifications, using local config and defaults.
-    int res = 0;
-    SoftSlot * slot = session->currentSlot;
-    std::unique_ptr<ShsmPrivateKey> privKey(
-            ShsmCreateUO::createNewRsaKey(slot, nullptr, (int)*modulusBits, &res)
-    );
-    if (res != 0 || !privKey){
-        DEBUG_MSGF(("C_GenerateKeyPair: Could not create new RSA key, code: %d", res));
-        return CKR_GENERAL_ERROR;
-    }
-
-  // Add the private key to the database.
-  CK_OBJECT_HANDLE privRef = session->db->addRSAKeyPriv(session->getSessionState(), privKey.get(), pPrivateKeyTemplate, ulPrivateKeyAttributeCount);
-
-  if(privRef == 0) {
-    DEBUG_MSG("C_GenerateKeyPair", "Could not save private key in DB");
-    return CKR_GENERAL_ERROR;
-  }
-
-  // Add the public key to the database.
-  CK_OBJECT_HANDLE pubRef = session->db->addRSAKeyPub(session->getSessionState(), privKey.get(), pPublicKeyTemplate, ulPublicKeyAttributeCount);
-  if(pubRef == 0) {
-    session->db->deleteObject(privRef);
-
-    DEBUG_MSG("C_GenerateKeyPair", "Could not save public key in DB");
-    return CKR_GENERAL_ERROR;
-  }
-
-  // Returns the object handles to the application.
-  *phPublicKey = pubRef;
-  *phPrivateKey = privRef;
-
-  INFO_MSG("C_GenerateKeyPair", "Key pair generated");
-  DEBUG_MSG("C_GenerateKeyPair", "OK");
-  return CKR_OK;
-  return 0;
+  return CKR_GENERAL_ERROR;
 }
