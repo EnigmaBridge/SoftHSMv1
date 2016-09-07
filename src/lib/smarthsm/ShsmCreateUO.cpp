@@ -334,10 +334,14 @@ Botan::RSA_PublicKey * ShsmCreateUO::readSerializedRSAPubKey(const Json::Value &
         return nullptr;
     }
 
+    return ShsmCreateUO::readSerializedRSAPubKey(rsaKey["key"].asString(), status);
+}
+
+Botan::RSA_PublicKey * ShsmCreateUO::readSerializedRSAPubKey(const std::string & rsaKey, int * status){
     // Convert hexadecimal to byte array.
     // TAG|len-2B|value. 81 = exponent, 82 = modulus
     BotanSecureByteVector rsaBuff;
-    int res = ShsmCreateUO::parseHexToVector(rsaKey["key"].asString(), rsaBuff);
+    int res = ShsmCreateUO::parseHexToVector(rsaKey, rsaBuff);
     if (res != 0){
         if (status) *status = -9;
         return nullptr;
