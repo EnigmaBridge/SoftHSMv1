@@ -286,7 +286,7 @@ CK_RV SoftDatabase::saveTokenInfo(int valueID, char *value, int length) {
 // Makes sure that object is saved with all its attributes.
 // If some error occur when saving the data, nothing is saved.
 
-CK_OBJECT_HANDLE SoftDatabase::addRSAKeyPub(CK_STATE state, Botan::RSA_PrivateKey *rsaKey, CK_ATTRIBUTE_PTR pPublicKeyTemplate, 
+CK_OBJECT_HANDLE SoftDatabase::addRSAKeyPub(CK_STATE state, Botan::RSA_PublicKey *rsaKey, CK_ATTRIBUTE_PTR pPublicKeyTemplate,
     CK_ULONG ulPublicKeyAttributeCount) {
 
   // Begin the transaction
@@ -401,7 +401,7 @@ CK_OBJECT_HANDLE SoftDatabase::addRSAKeyPub(CK_STATE state, Botan::RSA_PrivateKe
 // Makes sure that object is saved with all its attributes.
 // If some error occur when saving the data, nothing is saved.
 
-CK_OBJECT_HANDLE SoftDatabase::addRSAKeyPriv(CK_STATE state, Botan::RSA_PrivateKey *rsaKey, CK_ATTRIBUTE_PTR pPrivateKeyTemplate, 
+CK_OBJECT_HANDLE SoftDatabase::addRSAKeyPriv(CK_STATE state, Botan::IF_Scheme_PrivateKey *rsaKey, CK_ATTRIBUTE_PTR pPrivateKeyTemplate,
     CK_ULONG ulPrivateKeyAttributeCount) {
 
   // Unused variable, but saved if we ever need to do checks on the state
@@ -454,7 +454,7 @@ CK_OBJECT_HANDLE SoftDatabase::addRSAKeyPriv(CK_STATE state, Botan::RSA_PrivateK
   CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_END_DATE, &emptyDate, 0) != CKR_OK);
 
   // The RSA modulus
-  Botan::IF_Scheme_PrivateKey *ifKeyPriv = dynamic_cast<Botan::IF_Scheme_PrivateKey*>(rsaKey);
+  Botan::IF_Scheme_PrivateKey *ifKeyPriv = rsaKey; //dynamic_cast<Botan::IF_Scheme_PrivateKey*>(rsaKey);
   Botan::BigInt bigMod = ifKeyPriv->get_n();
   this->saveAttributeBigInt(objectID, CKA_MODULUS, &bigMod);
 
@@ -540,6 +540,46 @@ CK_OBJECT_HANDLE SoftDatabase::addRSAKeyPriv(CK_STATE state, Botan::RSA_PrivateK
 
   return objectID;
 }
+
+CK_OBJECT_HANDLE SoftDatabase::addRSAKeyPriv(CK_STATE state, ShsmPrivateKey *rsaKey, CK_ATTRIBUTE_PTR pPrivateKeyTemplate,
+    CK_ULONG ulPrivateKeyAttributeCount) {
+
+  // Unused variable, but saved if we ever need to do checks on the state
+  (void) state;
+
+  // Serialize as ordinary private key scheme.
+  CK_OBJECT_HANDLE objectID = this->addRSAKeyPriv(
+          state, dynamic_cast<Botan::IF_Scheme_PrivateKey *>(rsaKey), pPrivateKeyTemplate, ulPrivateKeyAttributeCount);
+
+  // Serialize UO part.
+  CK_BBOOL ckTrue = CK_TRUE;
+
+  // Begin the transaction
+  if(sqlite3_exec(db, "BEGIN IMMEDIATE;", NULL, NULL, NULL) != SQLITE_OK) {
+    return CK_INVALID_HANDLE;
+  }
+
+  CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_KEY,
+                                        &ckTrue, sizeof(ckTrue)) != CKR_OK);
+  CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_HANDLE,
+                                        &ckTrue, sizeof(ckTrue)) != CKR_OK);
+  CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_TYPE,
+                                        &ckTrue, sizeof(ckTrue)) != CKR_OK);
+  CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_ENCKEY,
+                                        &ckTrue, sizeof(ckTrue)) != CKR_OK);
+  CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_MACKEY,
+                                        &ckTrue, sizeof(ckTrue)) != CKR_OK);
+  CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_APIKEY,
+                                        &ckTrue, sizeof(ckTrue)) != CKR_OK);
+  CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_HOSTNAME,
+                                        &ckTrue, sizeof(ckTrue)) != CKR_OK);
+  CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_PORT,
+                                        &ckTrue, sizeof(ckTrue)) != CKR_OK);
+
+  sqlite3_exec(db, "COMMIT;", NULL, NULL, NULL);
+  return objectID;
+}
+
 
 // Import a certificate. The template has been validated.
 

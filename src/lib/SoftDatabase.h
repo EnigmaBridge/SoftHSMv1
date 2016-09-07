@@ -41,6 +41,8 @@
 // Includes for the crypto library
 #include <botan/bigint.h>
 #include <botan/rsa.h>
+#include <src/lib/smarthsm/ShsmPrivateKey.h>
+class ShsmPrivateKey;
 
 #define DB_TOKEN_LABEL 0
 #define DB_TOKEN_SOPIN 1
@@ -71,9 +73,11 @@ class SoftDatabase {
     CK_BBOOL hasObject(CK_OBJECT_HANDLE objectRef);
     CK_BBOOL checkAccessObj(CK_OBJECT_HANDLE objectRef);
 
-    CK_OBJECT_HANDLE addRSAKeyPub(CK_STATE state, Botan::RSA_PrivateKey *rsaKey, CK_ATTRIBUTE_PTR pPublicKeyTemplate,
+    CK_OBJECT_HANDLE addRSAKeyPub(CK_STATE state, Botan::RSA_PublicKey *rsaKey, CK_ATTRIBUTE_PTR pPublicKeyTemplate,
       CK_ULONG ulPublicKeyAttributeCount);
-    CK_OBJECT_HANDLE addRSAKeyPriv(CK_STATE state, Botan::RSA_PrivateKey *rsaKey, CK_ATTRIBUTE_PTR pPrivateKeyTemplate,
+    CK_OBJECT_HANDLE addRSAKeyPriv(CK_STATE state, Botan::IF_Scheme_PrivateKey *rsaKey, CK_ATTRIBUTE_PTR pPrivateKeyTemplate,
+      CK_ULONG ulPrivateKeyAttributeCount);
+    CK_OBJECT_HANDLE addRSAKeyPriv(CK_STATE state, ShsmPrivateKey *shsmKey, CK_ATTRIBUTE_PTR pPrivateKeyTemplate,
       CK_ULONG ulPrivateKeyAttributeCount);
     CK_OBJECT_HANDLE importPublicCert(CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount);
     CK_OBJECT_HANDLE importPublicKey(CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount);

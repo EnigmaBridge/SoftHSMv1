@@ -104,6 +104,10 @@ class SoftSlot {
         return retry;
     }
 
+    Json::Value *getConfig() const {
+        return config;
+    }
+
 private:
     CK_SLOT_ID slotID;
     SoftSlot *nextSlot;
