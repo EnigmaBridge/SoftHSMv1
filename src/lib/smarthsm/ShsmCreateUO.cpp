@@ -310,13 +310,63 @@ Json::Value ShsmCreateUO::getBestImportKey(const Json::Value & importKeys){
 
 int ShsmCreateUO::encryptRSA(const Json::Value & rsaKey, BotanSecureByteVector & buffer, BotanSecureByteVector & dest){
     // TODO: implement.
+
+
+
     return -1;
+}
+
+Botan::RSA_PublicKey * ShsmCreateUO::readSerializedRSAPubKey(const Json::Value & rsaKey, int * status){
+    if (rsaKey.isNull() || rsaKey["key"].isNull()){
+        if (status) *status = -1;
+        return nullptr;
+    }
+
+    // Convert hexadecimal to byte array.
+    // TAG|len-2B|value. 81 = exponent, 82 = modulus
+    BotanSecureByteVector rsaBuff;
+    int res = ShsmCreateUO::parseHexToVector(rsaKey["key"].asString(), rsaBuff);
+    if (res != 0){
+        if (status) *status = -9;
+        return nullptr;
+    }
+
+    bool nOk = false, eOk = false;
+    Botan::BigInt n;
+    Botan::BigInt e;
+
+    Botan::byte * rsa = rsaBuff.begin();
+    unsigned tag, len, pos = 0, ln = (unsigned)rsaBuff.size();
+    for(;pos < ln;){
+        tag = rsa[pos]; pos += 1;
+        len = (unsigned)ShsmApiUtils::getInt16FromBuff(rsa+pos); pos += 2;
+        switch(tag){
+            case 0x81:
+                eOk = true;
+                e.binary_decode(rsa+pos, len);
+                break;
+            case 0x82:
+                nOk = true;
+                n.binary_decode(rsa+pos, len);
+                break;
+            default:
+                break;
+        }
+        pos += len;
+    }
+
+    if (!nOk || !eOk){
+        if (status) *status = -10;
+        return nullptr;
+    }
+
+    return new Botan::RSA_PublicKey(n, e);
 }
 
 int ShsmCreateUO::parseHexToVector(std::string hex, BotanSecureByteVector &vector) {
     size_t len = (size_t)ShsmApiUtils::getJsonByteArraySize(hex);
     if (len <= 0){
-        ERROR_MSGF((TAG"Template hex format invalid"));
+        ERROR_MSGF((TAG"Hex format invalid"));
         return 1;
     }
 

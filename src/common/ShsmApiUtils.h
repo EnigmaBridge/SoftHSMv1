@@ -200,6 +200,13 @@ public:
     static std::string removeWhiteSpace(std::string &input);
 
     /**
+     * Reads 16 bit number from the buffer.
+     * @param buff
+     * @return
+     */
+    static unsigned long getInt16FromBuff(const Botan::byte * buff);
+
+    /**
      * Reads 2 bytes representation, converts to unsigned long.
      * String has to be at least 4 characters long.
      */

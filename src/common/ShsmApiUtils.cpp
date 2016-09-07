@@ -503,6 +503,12 @@ std::string ShsmApiUtils::removeWhiteSpace(std::string &input) {
     return copy;
 }
 
+unsigned long ShsmApiUtils::getInt16FromBuff(const Botan::byte * buff) {
+    unsigned long data = (((unsigned long)buff[1]) & 0xff);
+    data |= (((unsigned long)buff[0]) & 0xff) << 8;
+    return data;
+}
+
 unsigned long ShsmApiUtils::getInt16FromHexString(const char *buff) {
     unsigned long data = (unsigned long) ShsmApiUtils::hexdigitToInt(buff[3]);
     data |= ((unsigned long) ShsmApiUtils::hexdigitToInt(buff[2])) << 4;

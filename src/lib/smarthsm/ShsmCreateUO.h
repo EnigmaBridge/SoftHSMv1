@@ -144,6 +144,15 @@ public:
     static int encryptRSA(const Json::Value & rsaKey, BotanSecureByteVector & buffer, BotanSecureByteVector & dest);
 
     /**
+     * Parses JSON serialized RSA public key.
+     *
+     * @param rsaKey
+     * @param status
+     * @return
+     */
+    static Botan::RSA_PublicKey * readSerializedRSAPubKey(const Json::Value & rsaKey, int * status);
+
+    /**
      * Converts hex encoded byte array to secure byte vector.
      *
      * @param hex
