@@ -320,7 +320,7 @@ int ShsmCreateUO::encryptTemplate(const BotanSecureByteKey & encKey, const Botan
 #endif
 
     // Mac the whole buffer, with padding.
-    Botan::Pipe pipeMac(new Botan::MAC_Filter("CBC_MAC(AES-256/PKCS7)", aesMacKey));
+    Botan::Pipe pipeMac(new Botan::MAC_Filter("CBC-MAC(AES-256)", aesMacKey));
     pipeMac.start_msg();
     pipeMac.write(buffer.begin(), encOffset);
     pipeMac.write(encryptedData.begin(), cipLen);
