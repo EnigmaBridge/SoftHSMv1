@@ -9,6 +9,7 @@
 #include <src/lib/SoftSlot.h>
 #include "ShsmImportRequest.h"
 #include "ShsmUserObjectInfo.h"
+#include "ShsmPrivateKey.h"
 
 namespace createUO {
     namespace consts {
@@ -154,6 +155,15 @@ public:
     static Botan::RSA_PublicKey * readSerializedRSAPubKey(const Json::Value & rsaKey, int * status);
 
     /**
+     * Parses serialized public key.
+     *
+     * @param rsaKey
+     * @param status
+     * @return
+     */
+    static Botan::RSA_PublicKey * readSerializedRSAPubKey(const std::string & rsaKey, int * status);
+
+    /**
      * Converts hex encoded byte array to secure byte vector.
      *
      * @param hex
@@ -180,6 +190,20 @@ public:
      * @return
      */
     static ShsmUserObjectInfo * buildImportedObject(SoftSlot * slot,
+                                                    ShsmImportRequest * req,
+                                                    const Json::Value & importResp,
+                                                    int * status);
+
+    /**
+     * Creates Shsm private key from the imported (HSM generated) private key.
+     *
+     * @param slot
+     * @param req
+     * @param importResp
+     * @param status
+     * @return
+     */
+    static ShsmPrivateKey * buildImportedPrivateKey(SoftSlot * slot,
                                                     ShsmImportRequest * req,
                                                     const Json::Value & importResp,
                                                     int * status);

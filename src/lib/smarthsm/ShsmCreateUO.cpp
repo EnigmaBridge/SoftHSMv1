@@ -458,3 +458,41 @@ ShsmCreateUO::buildImportedObject(SoftSlot *slot, ShsmImportRequest *req, const 
     return uo;
 }
 
+ShsmPrivateKey *
+ShsmCreateUO::buildImportedPrivateKey(SoftSlot *slot,
+                                      ShsmImportRequest *req,
+                                      const Json::Value &importResp,
+                                      int *status)
+{
+    if (importResp.isNull()
+        || importResp["result"].isNull()
+        || importResp["result"]["handle"].isNull()
+        || importResp["result"]["publickey"].isNull()) // we know we create RSA key
+    {
+        ERROR_MSGF((TAG"Import result is invalid %s", ShsmApiUtils::json2string(importResp).c_str()));
+        if (status) *status = -1;
+        return nullptr;
+    }
+
+    // Process public key part from the response.
+    int res = 0;
+    std::string pubKeyStr = importResp["result"]["publickey"].asString();
+    Botan::RSA_PublicKey * pubKey = ShsmCreateUO::readSerializedRSAPubKey(pubKeyStr, &res);
+    if (pubKey == nullptr || res != 0){
+        DEBUG_MSGF((TAG"Error: in parsing public key [%s]", pubKeyStr.c_str()));
+        if (status) *status = -1;
+        return nullptr;
+    }
+
+    res = 0;
+    ShsmUserObjectInfo * uo = ShsmCreateUO::buildImportedObject(slot, req, importResp, &res);
+    if (uo == nullptr || res != 0){
+        DEBUG_MSGF((TAG"Error: in building UO [%d]", res));
+        if (status) *status = -2;
+        return nullptr;
+    }
+
+    ShsmPrivateKey * key = new ShsmPrivateKey(pubKey->get_n(), pubKey->get_e(), std::shared_ptr<ShsmUserObjectInfo>(uo));
+    return key;
+}
+
