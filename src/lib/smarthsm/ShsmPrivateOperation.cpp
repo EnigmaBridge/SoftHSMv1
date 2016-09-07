@@ -3,11 +3,11 @@
 //
 
 #include "ShsmPrivateOperation.h"
-#include "PK_Decryptor_EME_Remote.h"
 #include "ShsmUtils.h"
 #include <botan/engine.h>
 #include <botan/pk_ops.h>
 #include <botan/rsa.h>
+#include <src/lib/log.h>
 
 using namespace Botan;
 

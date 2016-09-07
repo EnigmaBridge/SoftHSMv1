@@ -32,8 +32,6 @@ libsofthsm_la_SOURCES =		main.cpp main.h \
 				../json/jsoncpp.cpp \
 				../common/ShsmApiUtils.h \
 				../common/ShsmApiUtils.cpp \
-				smarthsm/PK_Decryptor_EME_Remote.h \
-				smarthsm/PK_Decryptor_EME_Remote.cpp \
 				smarthsm/ShsmConnectionConfig.h \
 				smarthsm/ShsmCreateUO.cpp \
 				smarthsm/ShsmCreateUO.h \
