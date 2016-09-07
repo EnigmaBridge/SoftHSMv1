@@ -105,7 +105,7 @@ void logDebugF(const char *text, ...) {
   snprintf(msgBuff, 2048, "SoftHSM: %s", text);
 
   va_list arg;
-  va_start(arg, msgBuff);
+  va_start(arg, text);
   vsyslog(LOG_DEBUG, msgBuff, arg);
   va_end(arg);
 #else
@@ -119,7 +119,7 @@ void logErrorF(const char *text, ...) {
   snprintf(msgBuff, 2048, "SoftHSM: %s", text);
 
   va_list arg;
-  va_start(arg, msgBuff);
+  va_start(arg, text);
   vsyslog(LOG_ERR, msgBuff, arg);
   va_end(arg);
 #else
@@ -133,7 +133,7 @@ void logWarningF(const char *text, ...) {
   snprintf(msgBuff, 2048, "SoftHSM: %s", text);
 
   va_list arg;
-  va_start(arg, msgBuff);
+  va_start(arg, text);
   vsyslog(LOG_WARNING, msgBuff, arg);
   va_end(arg);
 #else
@@ -147,7 +147,7 @@ void logInfoF(const char *text, ...) {
   snprintf(msgBuff, 2048, "SoftHSM: %s", text);
 
   va_list arg;
-  va_start(arg, msgBuff);
+  va_start(arg, text);
   vsyslog(LOG_INFO, msgBuff, arg);
   va_end(arg);
 #else
