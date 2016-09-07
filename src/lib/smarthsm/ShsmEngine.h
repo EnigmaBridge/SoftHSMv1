@@ -21,11 +21,17 @@ public:
     ShsmEngine() {};
     ~ShsmEngine() {};
 
-    std::string provider_name() const { return "shsm"; }
+    static std::string get_name() { return "shsm"; }
+
+    std::string provider_name() const { return get_name(); }
 
     Botan::PK_Ops::Signature* get_signature_op(const Botan::Private_Key& key) const;
 
+    Botan::PK_Ops::Verification* get_verify_op(const Botan::Public_Key& key) const;
+
     Botan::PK_Ops::Decryption* get_decryption_op(const Botan::Private_Key& key) const;
+
+    Botan::PK_Ops::Encryption* get_encryption_op(const Botan::Public_Key& key) const;
 
 };
 
