@@ -74,16 +74,11 @@ Json::Value ShsmCreateUO::getTemplateRequest(SoftSlot *slot, const Json::Value *
 }
 
 Json::Value ShsmCreateUO::templateRequest(SoftSlot *slot, const Json::Value *spec) {
-    Retry retry;
-    if (slot->config != nullptr) {
-        retry.configure(*slot->config);
-    }
-
     // Template request, nonce will be regenerated.
     Json::Value req = ShsmCreateUO::getTemplateRequest(slot, spec);
 
     // Do the request with retry. isNull() == true in case of a fail.
-    Json::Value resp = ShsmUtils::requestWithRetry(retry, slot->host.c_str(), slot->getEnrollPort(), req);
+    Json::Value resp = ShsmUtils::requestWithRetry(slot->getRetry(), slot->host.c_str(), slot->getEnrollPort(), req);
 
     return resp;
 }
@@ -395,11 +390,6 @@ int ShsmCreateUO::parseHexToVector(std::string hex, BotanSecureByteVector &vecto
 }
 
 Json::Value ShsmCreateUO::importObject(SoftSlot *slot, ShsmImportRequest *req) {
-    Retry retry;
-    if (slot->config != nullptr) {
-        retry.configure(*slot->config);
-    }
-
     size_t tplSize = req->getTplPrepared().size();
     const Botan::byte * tplHex = req->getTplPrepared().begin();
     std::string tplHexString = ShsmApiUtils::bytesToHex(tplHex, tplSize);
@@ -419,7 +409,7 @@ Json::Value ShsmCreateUO::importObject(SoftSlot *slot, ShsmImportRequest *req) {
     jReq["data"] = data;
 
     // Do the request with retry. isNull() == true in case of a fail.
-    Json::Value resp = ShsmUtils::requestWithRetry(retry, slot->host.c_str(), slot->getEnrollPort(), jReq);
+    Json::Value resp = ShsmUtils::requestWithRetry(slot->getRetry(), slot->host.c_str(), slot->getEnrollPort(), jReq);
     return resp;
 }
 
