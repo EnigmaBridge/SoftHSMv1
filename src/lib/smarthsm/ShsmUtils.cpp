@@ -480,14 +480,6 @@ Json::Value ShsmUtils::requestWithRetry(const Retry & retry, const char * host, 
             return errRet;
         }
 
-        // Process result.
-        std::string rawResult = root["result"].asString();
-        std::string resultString = ShsmApiUtils::removeWhiteSpace(rawResult);
-        if (resultString.empty() || resultString.length() < 4){
-            ERROR_MSG(TAG, "Response string is too short.");
-            return errRet;
-        }
-
         return root;
     }
 
