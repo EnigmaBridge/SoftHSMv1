@@ -109,6 +109,12 @@ public:
         this->slot = slot;
     }
 
+    std::string resolveApiKey() const;
+
+    std::string resolveHostname() const;
+
+    int resolvePort() const;
+
 private:
     /**
      * User object identifier in EB.

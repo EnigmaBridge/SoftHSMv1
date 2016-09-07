@@ -400,9 +400,9 @@ void ShsmUtils::demangleNonce(Botan::byte *buff, size_t len) {
 
 std::string ShsmUtils::buildApiObjectId(ShsmUserObjectInfo * uo){
     if (uo->getKeyType() != SHSM_INVALID_KEY_TYPE){
-        return ShsmApiUtils::generateApiObjectId(*(uo->getApiKey()), uo->getKeyId(), uo->getKeyType());
+        return ShsmApiUtils::generateApiObjectId(uo->resolveApiKey(), uo->getKeyId(), uo->getKeyType());
     } else {
-        return ShsmApiUtils::generateApiObjectId(*(uo->getApiKey()), uo->getKeyId());
+        return ShsmApiUtils::generateApiObjectId(uo->resolveApiKey(), uo->getKeyId());
     }
 }
 

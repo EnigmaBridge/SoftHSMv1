@@ -35,8 +35,8 @@ BigInt ShsmPrivateOperation::private_op(const BigInt& m) const
     SoftSlot * slot = uo->getSlot();
     Retry retry = slot != nullptr ? slot->getRetry() : Retry();
 
-    Json::Value root = ShsmUtils::requestWithRetry(retry, uo->getHostname()->c_str(),
-                                uo->getPort(),
+    Json::Value root = ShsmUtils::requestWithRetry(retry, uo->resolveHostname().c_str(),
+                                uo->resolvePort(),
                                 json);
     if (root.isNull()){
         DEBUG_MSGF((TAG"SHSM network request result failed"));
