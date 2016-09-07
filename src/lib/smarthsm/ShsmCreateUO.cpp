@@ -182,7 +182,7 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
     BotanSecureByteVector encryptedTemplate;
     res = encryptTemplate(tplEncKey, tplMacKey, encOffset, tplVector, encryptedTemplate);
     if (res != 0){
-        ERROR_MSGF((TAG"Encryption failed (sym)"));
+        ERROR_MSGF((TAG"Encryption failed (sym) %d", res));
         if (statusCode) *statusCode = -4;
         return nullptr;
     }
@@ -193,7 +193,7 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
 
     unsigned int uoid = ShsmApiUtils::getHexUint32FromJsonField(tpl["objectid"], &res);
     if (res != 0){
-        ERROR_MSGF((TAG"Object id conversion failed"));
+        ERROR_MSGF((TAG"Object id conversion failed %d", res));
         if (statusCode) *statusCode = -5;
         return nullptr;
     }
@@ -206,7 +206,7 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
     BotanSecureByteVector rsaEncrypted;
     res = encryptRSA(iKey, rsaEncryptInput, rsaEncrypted);
     if (res != 0){
-        ERROR_MSGF((TAG"RSA encryption failed"));
+        ERROR_MSGF((TAG"RSA encryption failed %d", res));
         if (statusCode) *statusCode = -6;
         return nullptr;
     }
