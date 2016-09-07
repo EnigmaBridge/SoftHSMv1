@@ -8,6 +8,7 @@
 #include <json.h>
 #include <src/lib/SoftSlot.h>
 #include "ShsmImportRequest.h"
+#include "ShsmUserObjectInfo.h"
 
 namespace createUO {
     namespace consts {
@@ -169,6 +170,19 @@ public:
      * @return
      */
     static Json::Value importObject(SoftSlot * slot, ShsmImportRequest * req);
+
+    /**
+     * Creates UOInfo object from the import response.
+     *
+     * @param slot
+     * @param req
+     * @param importResp
+     * @return
+     */
+    static ShsmUserObjectInfo * buildImportedObject(SoftSlot * slot,
+                                                    ShsmImportRequest * req,
+                                                    const Json::Value & importResp,
+                                                    int * status);
 };
 
 

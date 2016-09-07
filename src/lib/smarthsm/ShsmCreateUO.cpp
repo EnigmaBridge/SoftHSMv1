@@ -423,3 +423,42 @@ Json::Value ShsmCreateUO::importObject(SoftSlot *slot, ShsmImportRequest *req) {
     return resp;
 }
 
+ShsmUserObjectInfo *
+ShsmCreateUO::buildImportedObject(SoftSlot *slot, ShsmImportRequest *req, const Json::Value &importResp, int * status) {
+    if (importResp.isNull()
+        || importResp["result"].isNull()
+        || importResp["result"]["handle"].isNull())
+    {
+        ERROR_MSGF((TAG"Import result is invalid %s", ShsmApiUtils::json2string(importResp).c_str()));
+        if (status) *status = -1;
+        return nullptr;
+    }
+
+    // TEST_API00000022480000300004
+    std::string handleStr = importResp["result"]["handle"].asString();
+    unsigned long hndSize = handleStr.size();
+
+    std::string apiKey = handleStr.substr(0, hndSize-10-10);
+    std::string uoIdStr = handleStr.substr(hndSize-10-10+2, 8);
+    std::string uoTypeStr = handleStr.substr(hndSize-10+2, 8);
+
+    unsigned long uoId = ShsmApiUtils::getInt32FromHexString(uoIdStr.c_str());
+    unsigned long uoType = ShsmApiUtils::getInt32FromHexString(uoTypeStr.c_str());
+
+    ShsmUserObjectInfo * uo = new ShsmUserObjectInfo();
+    uo->setKeyId(uoId);
+    uo->setKeyType(uoType);
+
+    uo->setEncKey(std::make_shared<BotanSecureByteKey>(req->getCommEncKey()));
+    uo->setMacKey(std::make_shared<BotanSecureByteKey>(req->getCommMacKey()));
+
+    // Store API key only if it differs from slot.
+    if (slot == nullptr || slot->getApiKey() != apiKey){
+        uo->setApiKey(std::make_shared<std::string>(apiKey));
+    }
+
+    // Set default slot reference, if no hostname is defined, implementation will use slot's ones.
+    uo->setSlot(slot);
+    return uo;
+}
+
