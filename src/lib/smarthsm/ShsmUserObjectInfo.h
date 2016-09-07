@@ -50,7 +50,7 @@ public:
     }
 
     void setKeyId(long keyId) {
-        ShsmUserObjectInfo::keyId = keyId;
+        this->keyId = keyId;
     }
 
     long getKeyType() const {
@@ -58,7 +58,7 @@ public:
     }
 
     void setKeyType(long keyType) {
-        ShsmUserObjectInfo::keyType = keyType;
+        this->keyType = keyType;
     }
 
     const std::shared_ptr<BotanSecureByteKey> &getEncKey() const {
@@ -66,7 +66,7 @@ public:
     }
 
     void setEncKey(const std::shared_ptr<BotanSecureByteKey> &encKey) {
-        ShsmUserObjectInfo::encKey = encKey;
+        this->encKey = encKey;
     }
 
     const std::shared_ptr<BotanSecureByteKey> &getMacKey() const {
@@ -74,7 +74,7 @@ public:
     }
 
     void setMacKey(const std::shared_ptr<BotanSecureByteKey> &macKey) {
-        ShsmUserObjectInfo::macKey = macKey;
+        this->macKey = macKey;
     }
 
     const std::shared_ptr<std::string> &getApiKey() const {
@@ -82,7 +82,7 @@ public:
     }
 
     void setApiKey(const std::shared_ptr<std::string> &apiKey) {
-        ShsmUserObjectInfo::apiKey = apiKey;
+        this->apiKey = apiKey;
     }
 
     const std::shared_ptr<std::string> &getHostname() const {
@@ -98,7 +98,7 @@ public:
     }
 
     void setPort(int port) {
-        ShsmUserObjectInfo::port = port;
+        this->port = port;
     }
 
     SoftSlot *getSlot() const {
@@ -106,7 +106,7 @@ public:
     }
 
     void setSlot(SoftSlot *slot) {
-        ShsmUserObjectInfo::slot = slot;
+        this->slot = slot;
     }
 
 private:
