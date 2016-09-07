@@ -53,9 +53,13 @@ void ShsmCreateUO::setType(Json::Value *spec, int type) {
         return;
     }
 
+    // Comm keys are generated on our side (20), appkey is server generated
+    type |= 1<<20;
+    type &= ~(1<<21);
+
     char buff[16];
     snprintf(buff, 16, "%x", type);
-    (*spec)[createUO::consts::type] = buff;
+    (*spec)[createUO::consts::type] = Json::Value(buff);
 }
 
 Json::Value ShsmCreateUO::getTemplateRequest(SoftSlot *slot, const Json::Value *spec) {

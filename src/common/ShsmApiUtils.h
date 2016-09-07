@@ -266,7 +266,7 @@ public:
      * @param jsonRequest
      * @return
      */
-    static std::string json2string(const Json::Value &jsonRequest);
+    static std::string json2string(const Json::Value &json);
 
     /**
      * Converts static json request to the string.
