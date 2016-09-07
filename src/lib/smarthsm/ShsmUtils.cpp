@@ -469,7 +469,7 @@ Json::Value ShsmUtils::requestWithRetry(const Retry & retry, const char * host, 
         if(!parsedSuccess) {
             ERROR_MSG(TAG, "Could not read data from socket");
             ERROR_MSGF((TAG"Response: [%s]", response.c_str()));
-            return errRet;
+            continue;
         }
 
         // Check status code.
@@ -477,7 +477,7 @@ Json::Value ShsmUtils::requestWithRetry(const Retry & retry, const char * host, 
         if (resultCode != EB_RESPONSE_CODE_OK){
             ERROR_MSG(TAG, "Result code is not success");
             ERROR_MSGF((TAG"Result code: %x, response: [%s]", resultCode, response.c_str()));
-            return errRet;
+            continue;
         }
 
         return root;
