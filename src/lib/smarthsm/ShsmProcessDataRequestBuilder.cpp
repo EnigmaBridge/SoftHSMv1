@@ -101,7 +101,7 @@ ShsmProcessDataRequest *ShsmProcessDataRequestBuilder::buildProcessDataRequest(c
                     // output from encryption goes here, messageId=0
                     0,
                     // output of encryption goes to MAC, messageId=1.
-                    new Botan::MAC_Filter("CBC_MAC(AES-256)", aesMacKey)
+                    new Botan::MAC_Filter("CBC-MAC(AES-256)", aesMacKey)
             ));
 
     pipe.start_msg();

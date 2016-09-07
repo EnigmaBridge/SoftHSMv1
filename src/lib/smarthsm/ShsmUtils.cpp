@@ -225,7 +225,7 @@ int ShsmUtils::readProtectedData(Botan::byte * buff, size_t size,
                     // output from decryption goes here, messageId=0
                     Botan::get_cipher("AES-256/CBC/PKCS7", aesKey, aesIv, Botan::DECRYPTION),
                     // output of MAC goes here, messageId=1.
-                    new Botan::MAC_Filter("CBC_MAC(AES-256)", aesMacKey)
+                    new Botan::MAC_Filter("CBC-MAC(AES-256)", aesMacKey)
             )
     );
 
