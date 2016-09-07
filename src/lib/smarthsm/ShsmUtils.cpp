@@ -408,12 +408,23 @@ std::string ShsmUtils::buildApiObjectId(ShsmUserObjectInfo * uo){
 
 void ShsmUtils::addShsmEngine2Botan() {
     Botan::Algorithm_Factory& af = Botan::Global_State_Management::global_state().algorithm_factory();
-    ShsmEngine * engine = new ShsmEngine;
 
+    // Detect if the provider is already registered.
+    std::string ourProvider = ShsmEngine::get_name();
+    std::vector<std::string> providersInstalled = af.providers_of("RSA");
+    for (std::vector<std::string>::iterator it = providersInstalled.begin() ; it != providersInstalled.end(); ++it){
+        if (*it == ourProvider){
+            return;
+        }
+    }
+
+    ShsmEngine * engine = new ShsmEngine;
+    std::string provName = engine->provider_name();
     af.add_engine(engine);
-    af.set_preferred_provider("RSA", engine->provider_name());
-    af.set_preferred_provider("RSA/Raw", engine->provider_name());
-    af.set_preferred_provider("RSA/PKCS1-1.5", engine->provider_name());
+    af.set_preferred_provider("RSA", provName);
+    af.set_preferred_provider("RSA/Raw", provName);
+    af.set_preferred_provider("RSA/PKCS1-1.5", provName);
+    DEBUG_MSG("C_Initialize", "SHSM installed");
 }
 
 void ShsmUtils::sleepcp(int milliseconds) {
