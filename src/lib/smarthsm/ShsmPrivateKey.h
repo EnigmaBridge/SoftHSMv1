@@ -24,10 +24,7 @@ class ShsmPrivateKey : public Botan::RSA_PublicKey,
 
 public:
 
-    ShsmPrivateKey(const Botan::BigInt n, const Botan::BigInt e, std::shared_ptr<ShsmUserObjectInfo> uoin)
-            : RSA_PublicKey(n, e),
-            IF_Scheme_PrivateKey(),
-            uo(uoin) { }
+    ShsmPrivateKey(const Botan::BigInt &n, const Botan::BigInt &e, std::shared_ptr<ShsmUserObjectInfo> uoin);
 
     virtual std::string algo_name() const;
 

@@ -25,6 +25,17 @@ SHSM_KEY_HANDLE ShsmPrivateKey::getKeyId() const {
     return uo ? uo->getKeyId() : SHSM_INVALID_KEY_HANDLE;
 }
 
+ShsmPrivateKey::ShsmPrivateKey(const Botan::BigInt &n, const Botan::BigInt &e, std::shared_ptr<ShsmUserObjectInfo> uoin)
+        : IF_Scheme_PrivateKey(), RSA_PublicKey(n, e),
+          uo(uoin) {
+
+    // Multiple inheritance overlap fix
+    this->Botan::RSA_PublicKey::n = n;
+    this->Botan::RSA_PublicKey::e = e;
+    this->Botan::IF_Scheme_PrivateKey::n = n;
+    this->Botan::IF_Scheme_PrivateKey::e = e;
+}
+
 void ShsmPrivateKey::setUo(const std::shared_ptr<ShsmUserObjectInfo> &uo) {
     this->uo = uo;
 }
