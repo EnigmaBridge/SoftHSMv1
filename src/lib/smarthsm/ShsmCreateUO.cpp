@@ -190,6 +190,8 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
     // Prepare buffer for RSA encryption.
     Json::Value iKey = ShsmCreateUO::getBestImportKey(tpl["importkeys"]);
     req->setImportKey(iKey);
+    req->setObjectId(tpl["objectid"]);
+    req->setAuthorization(tpl["authorization"]);
 
     BotanSecureByteVector rsaEncryptInput(tplEncKey.size() + tplMacKey.size() + 4);
     unsigned int uoid = ShsmApiUtils::getHexUint32FromJsonField(tpl["objectid"], &res);
@@ -386,5 +388,34 @@ int ShsmCreateUO::parseHexToVector(std::string hex, BotanSecureByteVector &vecto
     size_t realSize = ShsmApiUtils::hexToBytes(hex, vector.begin(), (size_t) len);
     vector.resize(realSize);
     return 0;
+}
+
+Json::Value ShsmCreateUO::importObject(SoftSlot *slot, ShsmImportRequest *req) {
+    Retry retry;
+    if (slot->config != nullptr) {
+        retry.configure(*slot->config);
+    }
+
+    size_t tplSize = req->getTplPrepared().size();
+    const Botan::byte * tplHex = req->getTplPrepared().begin();
+    std::string tplHexString = ShsmApiUtils::bytesToHex(tplHex, tplSize);
+
+    Json::Value data;
+    data["objectid"] = req->getObjectId();
+    data["importkey"] = req->getImportKey()["id"];
+    data["object"] = tplHexString;
+    data["authorization"] = req->getAuthorization();
+
+    // Request body
+    Json::Value jReq;
+    jReq["function"] = "CreateUserObject";
+    jReq["version"] = "1.0";
+    jReq["objectid"] = ShsmApiUtils::generateApiObjectId(slot->apiKey, 0x1);
+    jReq["nonce"] = ShsmApiUtils::generateNonce(8);
+    jReq["data"] = data;
+
+    // Do the request with retry. isNull() == true in case of a fail.
+    Json::Value resp = ShsmUtils::requestWithRetry(retry, slot->host.c_str(), slot->getEnrollPort(), jReq);
+    return resp;
 }
 

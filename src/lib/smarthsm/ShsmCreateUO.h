@@ -33,7 +33,7 @@ namespace createUO {
             const int AUTH_PASSWORD = 0x000a;
             const int AUTH_UPDATE_USER_CTX = 0x000b;
             const int TOKENIZE = 0x000c;
-            const int  DETOKENIZE = 0x000d;
+            const int DETOKENIZE = 0x000d;
             const int TOKENIZEWRAP = 0x000e;
             const int PLAINAESDECRYPT = 0x000f;
             const int RANDOMDATA = 0x0010;
@@ -160,6 +160,15 @@ public:
      * @return
      */
     static int parseHexToVector(std::string hex, BotanSecureByteVector & vector);
+
+    /**
+     * Calls importUO()
+     *
+     * @param slot
+     * @param req
+     * @return
+     */
+    static Json::Value importObject(SoftSlot * slot, ShsmImportRequest * req);
 };
 
 

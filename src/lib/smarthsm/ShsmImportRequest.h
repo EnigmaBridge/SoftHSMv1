@@ -57,12 +57,30 @@ public:
         ShsmImportRequest::importKey = importKey;
     }
 
+    const Json::Value &getAuthorization() const {
+        return authorization;
+    }
+
+    void setAuthorization(const Json::Value &authorization) {
+        ShsmImportRequest::authorization = authorization;
+    }
+
+    const Json::Value &getObjectId() const {
+        return objectId;
+    }
+
+    void setObjectId(const Json::Value &objectId) {
+        ShsmImportRequest::objectId = objectId;
+    }
+
 private:
     BotanSecureByteVector tpl;
     BotanSecureByteVector tplPrepared;
     BotanSecureByteKey commEncKey;
     BotanSecureByteKey commMacKey;
     Json::Value importKey;
+    Json::Value authorization;
+    Json::Value objectId;
 };
 
 
