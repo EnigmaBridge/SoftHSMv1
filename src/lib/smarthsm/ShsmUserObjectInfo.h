@@ -9,6 +9,9 @@
 #include <src/common/ShsmApiUtils.h>
 #include <src/lib/SoftSlot.h>
 
+// Fwd declaration needed.
+class SoftSlot;
+
 /**
  * User Object data.
  * User Object (UO) is an SHSM object (e.g., RSA private key, AES encryption key, authentication context ID).

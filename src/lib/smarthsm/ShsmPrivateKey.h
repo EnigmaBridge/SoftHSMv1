@@ -9,6 +9,8 @@
 #include "ShsmApiUtils.h"
 #include "ShsmUserObjectInfo.h"
 
+class ShsmUserObjectInfo;
+
 /**
  * Represents private key stored in the SHSM.
  * Contains public part, implements private key methods.
@@ -22,9 +24,10 @@ class ShsmPrivateKey : public Botan::RSA_PublicKey,
 
 public:
 
-    ShsmPrivateKey(const Botan::BigInt n, const Botan::BigInt e, std::shared_ptr<ShsmUserObjectInfo> uoin) : RSA_PublicKey(n, e),
-                                                                                 IF_Scheme_PrivateKey(),
-                                                                                 uo(uoin) { }
+    ShsmPrivateKey(const Botan::BigInt n, const Botan::BigInt e, std::shared_ptr<ShsmUserObjectInfo> uoin)
+            : RSA_PublicKey(n, e),
+            IF_Scheme_PrivateKey(),
+            uo(uoin) { }
 
     virtual std::string algo_name() const;
 
@@ -34,17 +37,13 @@ public:
 
     virtual Botan::MemoryVector<Botan::byte> x509_subject_public_key() const;
 
-    SHSM_KEY_HANDLE getKeyId() const {
-        return uo ? uo->getKeyId() : SHSM_INVALID_KEY_HANDLE;
-    }
+    SHSM_KEY_HANDLE getKeyId() const;
 
     const std::shared_ptr<ShsmUserObjectInfo> &getUo() const {
         return uo;
     }
 
-    void setUo(const std::shared_ptr<ShsmUserObjectInfo> &uo) {
-        ShsmPrivateKey::uo = uo;
-    }
+    void setUo(const std::shared_ptr<ShsmUserObjectInfo> &uo);
 
 protected:
     // User object info.

@@ -20,3 +20,11 @@ Botan::AlgorithmIdentifier ShsmPrivateKey::algorithm_identifier() const {
 Botan::MemoryVector<Botan::byte> ShsmPrivateKey::x509_subject_public_key() const {
     return Botan::MemoryVector<Botan::byte>(0);
 }
+
+SHSM_KEY_HANDLE ShsmPrivateKey::getKeyId() const {
+    return uo ? uo->getKeyId() : SHSM_INVALID_KEY_HANDLE;
+}
+
+void ShsmPrivateKey::setUo(const std::shared_ptr<ShsmUserObjectInfo> &uo) {
+    this->uo = uo;
+}
