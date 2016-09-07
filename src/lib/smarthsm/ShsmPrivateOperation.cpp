@@ -15,9 +15,22 @@ using namespace Botan;
 BigInt ShsmPrivateOperation::private_op(const BigInt& m) const
 {
     // TODO: refactor to a separate ProcessData request.
-    SecureVector<byte> input = BigInt::encode(m);
-    const byte * inputBuff = input.begin();
+    BigInt errRet = BigInt(0);
+
+    // Align to the exact size of the modulus.
+    const size_t modulusSize = this->privKey.get_n().encoded_size();
+    const size_t payloadLength = m.encoded_size();
+    if (payloadLength > modulusSize){
+        ERROR_MSGF((TAG"Payload length is larger than modulus %d", (int)payloadLength));
+        return errRet;
+    }
+
+    SecureVector<byte> input(modulusSize);
     const size_t inputSize = input.size();
+    byte * inputBuff = input.begin();
+
+    memset(inputBuff, 0, inputSize);
+    m.binary_encode(inputBuff + (modulusSize - payloadLength));
 
 #ifdef EB_DEBUG
     {std::string origPlainStr = ShsmApiUtils::bytesToHex(inputBuff, inputSize);
@@ -25,7 +38,6 @@ BigInt ShsmPrivateOperation::private_op(const BigInt& m) const
 #endif
 
     // Generate JSON request for decryption.
-    BigInt errRet = BigInt(0);
     Json::Value json = ShsmUtils::getRequestDecrypt(&this->privKey, inputBuff, inputSize);
 
     // Perform the request.
