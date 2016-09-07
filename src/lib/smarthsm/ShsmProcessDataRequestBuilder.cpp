@@ -67,12 +67,6 @@ ShsmProcessDataRequest *ShsmProcessDataRequestBuilder::buildProcessDataRequest(c
     jReq["nonce"] = finalNonce;
     const int keyId = (int) uo->getKeyId();
 
-    // TODO: remote, already done above...
-//    // Object id, long to string.
-//    char buf[16] = {0};
-//    snprintf(buf, 16, "%d", keyId);
-//    jReq["objectid"] = buf;
-
     std::ostringstream dataBuilder;
 
     // _0000 is the length of plain data, 2B.
