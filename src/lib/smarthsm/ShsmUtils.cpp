@@ -49,7 +49,7 @@ int ShsmUtils::getShsmKeyHandle(SoftDatabase *db, CK_OBJECT_HANDLE hKey, SHSM_KE
             ERROR_MSG("getShsmKeyHandle", "Could not get attribute SHSM_KEY_HANDLE");
             return -1;
         }
-        *kHnd = shsmRet;
+        *kHnd = shsmHandle;
     }
 
     if (kType != NULL) {
@@ -63,7 +63,7 @@ int ShsmUtils::getShsmKeyHandle(SoftDatabase *db, CK_OBJECT_HANDLE hKey, SHSM_KE
             ERROR_MSG("getShsmKeyHandle", "Could not get attribute CKA_SHSM_UO_TYPE");
             return -1;
         }
-        *kType = shsmRet;
+        *kType = shsmType;
     }
 
     return 0;
@@ -99,7 +99,7 @@ std::shared_ptr<ShsmUserObjectInfo> ShsmUtils::buildShsmUserObjectInfo(SoftDatab
     bool hasHostname = false;
 
     // EncKey, mandatory.
-    attr = {CKA_SHSM_UO_ENCKEY, (void *) &encKeyBuff, EB_COM_KEY_SIZE};
+    attr = {CKA_SHSM_UO_ENCKEY, encKeyBuff, EB_COM_KEY_SIZE};
     shsmRet = db->getAttribute(hKey, &attr);
     if (shsmRet != CKR_OK || attr.ulValueLen != EB_COM_KEY_SIZE){
         ERROR_MSG("buildShsmUserObjectInfo", "Could not get attribute CKA_SHSM_UO_ENCKEY");
@@ -108,7 +108,7 @@ std::shared_ptr<ShsmUserObjectInfo> ShsmUtils::buildShsmUserObjectInfo(SoftDatab
     uo->setEncKey(std::make_shared<BotanSecureByteKey>(encKeyBuff, (size_t)EB_COM_KEY_SIZE));
 
     // MacKey, mandatory.
-    attr = {CKA_SHSM_UO_MACKEY, (void *) &macKeyBuff, EB_COM_KEY_SIZE};
+    attr = {CKA_SHSM_UO_MACKEY, macKeyBuff, EB_COM_KEY_SIZE};
     shsmRet = db->getAttribute(hKey, &attr);
     if (shsmRet != CKR_OK || attr.ulValueLen != EB_COM_KEY_SIZE){
         ERROR_MSG("buildShsmUserObjectInfo", "Could not get attribute CKA_SHSM_UO_MACKEY");
@@ -117,7 +117,7 @@ std::shared_ptr<ShsmUserObjectInfo> ShsmUtils::buildShsmUserObjectInfo(SoftDatab
     uo->setMacKey(std::make_shared<BotanSecureByteKey>(macKeyBuff, (size_t)EB_COM_KEY_SIZE));
 
     // ApiKey [optional]
-    attr = {CKA_SHSM_UO_APIKEY, (void *) &apiKeyBuff, EB_API_KEY_SIZE};
+    attr = {CKA_SHSM_UO_APIKEY, apiKeyBuff, EB_API_KEY_SIZE};
     shsmRet = db->getAttribute(hKey, &attr);
     if (shsmRet == CKR_OK){
         if (attr.ulValueLen >= EB_API_KEY_SIZE){
@@ -128,7 +128,7 @@ std::shared_ptr<ShsmUserObjectInfo> ShsmUtils::buildShsmUserObjectInfo(SoftDatab
     }
 
     // Hostname [optional]
-    attr = {CKA_SHSM_UO_HOSTNAME, (void *) &hostnameBuff, EB_HOSTNAME_SIZE};
+    attr = {CKA_SHSM_UO_HOSTNAME, hostnameBuff, EB_HOSTNAME_SIZE};
     shsmRet = db->getAttribute(hKey, &attr);
     if (shsmRet == CKR_OK){
         if (attr.ulValueLen >= EB_HOSTNAME_SIZE){
