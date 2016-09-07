@@ -103,6 +103,7 @@ void SoftSlot::addSlot(CK_SLOT_ID newSlotID, char *newDBPath, const Json::Value 
             this->apiKey = (*config)[CFG_APIKEY].isNull() ? "" : (*config)[CFG_APIKEY].asString();
             this->key = (*config)[CFG_KEY].isNull() ? "" : (*config)[CFG_KEY].asString();
             this->macKey = (*config)[CFG_MACKEY].isNull() ? "" : (*config)[CFG_MACKEY].asString();
+            this->retry.configure(*config);
         }
     }
 

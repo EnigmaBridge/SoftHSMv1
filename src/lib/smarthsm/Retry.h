@@ -17,6 +17,11 @@ public:
     Retry(unsigned int maxRetry, int jitterBase, int jitterRand) : maxRetry(maxRetry), jitterBase(jitterBase),
                                                                    jitterRand(jitterRand) {}
 
+    Retry(const Retry& other) :
+            maxRetry(other.maxRetry),
+            jitterBase(other.jitterBase),
+            jitterRand(other.jitterRand) {}
+
     void configure(const Json::Value & config);
 
     int genJitter() const;

@@ -40,6 +40,7 @@
 // Includes for the crypto library
 #include <botan/rng.h>
 #include <src/json/json.h>
+#include <src/lib/smarthsm/Retry.h>
 
 class SoftSlot {
   public:
@@ -65,6 +66,7 @@ class SoftSlot {
     char *hashedUserPIN;
     char *hashedSOPIN;
 
+    // Shsm
     std::string host;
     int port;
     int enrollPort;
@@ -72,6 +74,7 @@ class SoftSlot {
     std::string key;
     std::string macKey;
     Json::Value * config;
+    Retry retry;
 
     int getPort() const {
       return port;
@@ -95,6 +98,10 @@ class SoftSlot {
 
     const std::string &getMacKey() const {
       return macKey;
+    }
+
+    const Retry &getRetry() const {
+        return retry;
     }
 
 private:
