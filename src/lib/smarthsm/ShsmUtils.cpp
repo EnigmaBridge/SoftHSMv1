@@ -261,7 +261,7 @@ int ShsmUtils::readProtectedData(Botan::byte * buff, size_t size,
     }
 
     // Check the flag, has to be 0xf1
-    if (outBuff[0] != 'f' || outBuff[1] != '1'){
+    if (outBuff[0] != 0xf1){
         ERROR_MSG("readProtectedData", "Invalid message block format");
         free(outBuff);
         return EB_PROCESSDATA_UNWRAP_STATUS_UNEXPECTED_FORMAT;
