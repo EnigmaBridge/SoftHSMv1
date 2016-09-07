@@ -475,7 +475,7 @@ Json::Value ShsmUtils::requestWithRetry(const Retry & retry, const char * host, 
         // Check status code.
         unsigned int resultCode = ShsmApiUtils::getStatus(root);
         if (resultCode != EB_RESPONSE_CODE_OK){
-            ERROR_MSG(TAG, "Result code is not success, cannot decrypt");
+            ERROR_MSG(TAG, "Result code is not success");
             ERROR_MSGF((TAG"Result code: %x, response: [%s]", resultCode, response.c_str()));
             return errRet;
         }
