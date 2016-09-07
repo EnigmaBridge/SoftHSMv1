@@ -350,10 +350,10 @@ Json::Value ShsmCreateUO::getBestImportKey(const Json::Value & importKeys){
             continue;
         }
 
-        if (kRsa1024.isNull() && cKey["type"].asString() == "rsa1024"){
+        if (!kRsa1024.isNull() && cKey["type"].asString() == "rsa1024"){
             kRsa1024 = cKey;
         }
-        if (kRsa2048.isNull() && cKey["type"].asString() == "rsa2048"){
+        if (!kRsa2048.isNull() && cKey["type"].asString() == "rsa2048"){
             kRsa2048 = cKey;
         }
     }
