@@ -228,6 +228,8 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
     req->setTplPrepared(finalTemplate);
     ShsmImportRequest * toReturn = req.get();
     req.release();
+
+    if (statusCode) *statusCode = 0;
     return toReturn;
 }
 
@@ -309,11 +311,19 @@ Json::Value ShsmCreateUO::getBestImportKey(const Json::Value & importKeys){
 }
 
 int ShsmCreateUO::encryptRSA(const Json::Value & rsaKey, BotanSecureByteVector & buffer, BotanSecureByteVector & dest){
-    // TODO: implement.
+    int res = -1;
+    Botan::RSA_PublicKey * tmpPub = ShsmCreateUO::readSerializedRSAPubKey(rsaKey, &res);
+    if (res != 0 || tmpPub == nullptr){
+        ERROR_MSGF((TAG"RSA pub key deserialization failed: %d", res));
+        return -1;
+    }
 
+    std::unique_ptr<Botan::RSA_PublicKey> pubKey(tmpPub);
+    Botan::PK_Encryptor_EME encryptor(*tmpPub, "EME-PKCS1-v1_5");
 
-
-    return -1;
+    // Do the encryption with padding.
+    dest = encryptor.encrypt(buffer.begin(), buffer.size(), ShsmApiUtils::rng());
+    return 0;
 }
 
 Botan::RSA_PublicKey * ShsmCreateUO::readSerializedRSAPubKey(const Json::Value & rsaKey, int * status){
@@ -360,6 +370,7 @@ Botan::RSA_PublicKey * ShsmCreateUO::readSerializedRSAPubKey(const Json::Value &
         return nullptr;
     }
 
+    if (status) *status = 0;
     return new Botan::RSA_PublicKey(n, e);
 }
 
