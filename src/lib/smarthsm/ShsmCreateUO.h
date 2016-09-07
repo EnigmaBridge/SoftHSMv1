@@ -76,12 +76,29 @@ public:
     static Json::Value getTemplateRequestSpec(const Json::Value * spec);
 
     /**
+     * Returns get template request specification, using default values if
+     * not present in spec. Uses configuration stored in slot.
+     *
+     * @param slot specification to use. optional.
+     * @return
+     */
+    static Json::Value getTemplateRequestSpec(SoftSlot * slot);
+
+    /**
      * Sets UO type to the request.
      *
      * @param spec
      * @param type
      */
     static void setType(Json::Value * spec, int type);
+
+    /**
+     * Sets type of the create request, for RSA key with given key size.
+     *
+     * @param spec
+     * @param bitSize
+     */
+    static int setRsaType(Json::Value * spec, int bitSize);
 
     /**
      * Builds API request block.
@@ -207,6 +224,17 @@ public:
                                                     ShsmImportRequest * req,
                                                     const Json::Value & importResp,
                                                     int * status);
+
+    /**
+     * Wrapping function that handles the whole RSA key creation.
+     *
+     * @param slot
+     * @param extraSpec
+     * @param bitSize
+     * @param status
+     * @return
+     */
+    static ShsmPrivateKey * createNewRsaKey(SoftSlot * slot, Json::Value * extraSpec, int bitSize, int* status);
 };
 
 

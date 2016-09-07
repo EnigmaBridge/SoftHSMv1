@@ -55,11 +55,26 @@ Json::Value ShsmCreateUO::getDefaultTemplateRequestSpec() {
 Json::Value ShsmCreateUO::getTemplateRequestSpec(const Json::Value *spec) {
     Json::Value ret(getDefaultTemplateRequestSpec());
 
-    if (spec != nullptr) {
+    if (spec != nullptr && !spec->isNull()) {
         ShsmUtils::merge(ret, *spec);
     }
 
     return ret;
+}
+
+Json::Value ShsmCreateUO::getTemplateRequestSpec(SoftSlot * slot) {
+    Json::Value cfg(0);
+    if (slot != nullptr
+        && slot->getConfig() != nullptr
+        && !slot->getConfig()->isNull())
+    {
+        Json::Value & slotConf = *(slot->getConfig());
+        if (!slotConf["createTpl"].isNull()){
+            cfg = slotConf["createTpl"];
+        }
+    }
+
+    return ShsmCreateUO::getTemplateRequestSpec(&cfg);
 }
 
 void ShsmCreateUO::setType(Json::Value *spec, int type) {
@@ -74,6 +89,22 @@ void ShsmCreateUO::setType(Json::Value *spec, int type) {
     char buff[16];
     snprintf(buff, 16, "%x", type);
     (*spec)[createUO::consts::type] = Json::Value(buff);
+}
+
+int ShsmCreateUO::setRsaType(Json::Value * spec, int bitSize){
+    switch (bitSize){
+        case 1024:
+            ShsmCreateUO::setRsaType(spec, createUO::consts::uoType::RSA1024DECRYPT_NOPAD);
+            return 0;
+
+        case 2048:
+            ShsmCreateUO::setRsaType(spec, createUO::consts::uoType::RSA2048DECRYPT_NOPAD);
+            return 0;
+
+        default:
+            WARNING_MSGF((TAG"Unsupported RSA key size %d", bitSize));
+            return -1;
+    }
 }
 
 Json::Value ShsmCreateUO::getTemplateRequest(SoftSlot *slot, const Json::Value *spec) {
@@ -508,5 +539,56 @@ ShsmCreateUO::buildImportedPrivateKey(SoftSlot *slot,
 
     ShsmPrivateKey * key = new ShsmPrivateKey(pubKey->get_n(), pubKey->get_e(), std::shared_ptr<ShsmUserObjectInfo>(uo));
     return key;
+}
+
+ShsmPrivateKey *ShsmCreateUO::createNewRsaKey(SoftSlot *slot, Json::Value *extraSpec, int bitSize, int *status) {
+    // Create template specifications, using local config and defaults.
+    int res = 0;
+    Json::Value tplSpec = extraSpec != nullptr && !extraSpec->isNull() ?
+                          ShsmCreateUO::getTemplateRequestSpec(extraSpec) :
+                          ShsmCreateUO::getTemplateRequestSpec(slot);
+
+    // Set type of object we are interested in - RSA with given bits.
+    if (ShsmCreateUO::setRsaType(&tplSpec, bitSize) != 0){
+        DEBUG_MSGF(("C_GenerateKeyPair: Unsupported RSA modulus bit size: %d", bitSize));
+        if (status) *status = -1;
+        return nullptr;
+    }
+
+    // Fetch template for new UO.
+    Json::Value tplResp = ShsmCreateUO::templateRequest(slot, &tplSpec);
+    if (tplResp.isNull()){
+        DEBUG_MSG("C_GenerateKeyPair", "Could not fetch template");
+        if (status) *status = -2;
+        return nullptr;
+    }
+
+    // Process the template, fill in the keys, do the crypto
+    std::unique_ptr<ShsmImportRequest> importReq(ShsmCreateUO::processTemplate(slot, &tplSpec, &tplResp, &res));
+    if (res != 0 || !importReq){
+        DEBUG_MSGF(("C_GenerateKeyPair: Could not process the template, code: %d", res));
+        if (status) *status = -3;
+        return nullptr;
+    }
+
+    // Import the initialized UO
+    Json::Value importResp = ShsmCreateUO::importObject(slot, importReq.get());
+    if (importResp.isNull()){
+        DEBUG_MSGF(("C_GenerateKeyPair: Import failed"));
+        if (status) *status = -4;
+        return nullptr;
+    }
+
+    // Build ShsmPrivateKey from the import result.
+    std::unique_ptr<ShsmPrivateKey> privKey(ShsmCreateUO::buildImportedPrivateKey(slot, importReq.get(), importResp, &res));
+    if (res != 0 || !privKey){
+        DEBUG_MSGF(("C_GenerateKeyPair: Could not import the key, code: %d", res));
+        if (status) *status = -5;
+        return nullptr;
+    }
+
+    ShsmPrivateKey * keyToReturn = privKey.get();
+    privKey.release();
+    return keyToReturn;
 }
 
