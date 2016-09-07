@@ -189,8 +189,9 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
 
     // Prepare buffer for RSA encryption.
     Json::Value iKey = ShsmCreateUO::getBestImportKey(tpl["importkeys"]);
-    BotanSecureByteVector rsaEncryptInput(tplEncKey.size() + tplMacKey.size() + 4);
+    req->setImportKey(iKey);
 
+    BotanSecureByteVector rsaEncryptInput(tplEncKey.size() + tplMacKey.size() + 4);
     unsigned int uoid = ShsmApiUtils::getHexUint32FromJsonField(tpl["objectid"], &res);
     if (res != 0){
         ERROR_MSGF((TAG"Object id conversion failed %d", res));

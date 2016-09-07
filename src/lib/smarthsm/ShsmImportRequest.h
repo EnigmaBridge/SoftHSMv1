@@ -49,11 +49,20 @@ public:
         return tpl.size();
     }
 
+    const Json::Value &getImportKey() const {
+        return importKey;
+    }
+
+    void setImportKey(const Json::Value &importKey) {
+        ShsmImportRequest::importKey = importKey;
+    }
+
 private:
     BotanSecureByteVector tpl;
     BotanSecureByteVector tplPrepared;
     BotanSecureByteKey commEncKey;
     BotanSecureByteKey commMacKey;
+    Json::Value importKey;
 };
 
 
