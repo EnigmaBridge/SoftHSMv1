@@ -438,10 +438,10 @@ unsigned int ShsmApiUtils::getHexUint32FromJsonField(const Json::Value &root, in
         } else if (ln<8) {
             const char * orig = root.asCString();
             char buff[] = "00000000";
-            for(int i = 0; i<ln; i++){
+            for(unsigned i = 0; i<ln; i++){
                 buff[8-ln+i] = orig[i];
             }
-            return (unsigned int) ShsmApiUtils::getInt32FromHexString(root.asCString());
+            return (unsigned int) ShsmApiUtils::getInt32FromHexString(buff);
         }
     }
 
