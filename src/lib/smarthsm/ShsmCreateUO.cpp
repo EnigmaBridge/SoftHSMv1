@@ -94,11 +94,11 @@ void ShsmCreateUO::setType(Json::Value *spec, int type) {
 int ShsmCreateUO::setRsaType(Json::Value * spec, int bitSize){
     switch (bitSize){
         case 1024:
-            ShsmCreateUO::setRsaType(spec, createUO::consts::uoType::RSA1024DECRYPT_NOPAD);
+            ShsmCreateUO::setType(spec, createUO::consts::uoType::RSA1024DECRYPT_NOPAD);
             return 0;
 
         case 2048:
-            ShsmCreateUO::setRsaType(spec, createUO::consts::uoType::RSA2048DECRYPT_NOPAD);
+            ShsmCreateUO::setType(spec, createUO::consts::uoType::RSA2048DECRYPT_NOPAD);
             return 0;
 
         default:
