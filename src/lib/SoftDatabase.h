@@ -43,6 +43,7 @@
 #include <botan/rsa.h>
 #include <src/lib/smarthsm/ShsmPrivateKey.h>
 class ShsmPrivateKey;
+typedef const void *CK_VOID_PTR_CONST;
 
 #define DB_TOKEN_LABEL 0
 #define DB_TOKEN_SOPIN 1
@@ -85,7 +86,7 @@ class SoftDatabase {
     void destroySessObj();
     void deleteObject(CK_OBJECT_HANDLE objRef);
 
-    CK_RV saveAttribute(CK_OBJECT_HANDLE objectID, CK_ATTRIBUTE_TYPE type, CK_VOID_PTR pValue, CK_ULONG ulValueLen);
+    CK_RV saveAttribute(CK_OBJECT_HANDLE objectID, CK_ATTRIBUTE_TYPE type, CK_VOID_PTR_CONST pValue, CK_ULONG ulValueLen);
     CK_RV saveAttributeBigInt(CK_OBJECT_HANDLE objectID, CK_ATTRIBUTE_TYPE type, Botan::BigInt *bigNumber);
 
   private:

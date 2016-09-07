@@ -772,7 +772,7 @@ CK_OBJECT_HANDLE SoftDatabase::importPrivateKey(CK_ATTRIBUTE_PTR pTemplate, CK_U
 // Save the attribute in the database.
 // Only update if the attribute exists.
 
-CK_RV SoftDatabase::saveAttribute(CK_OBJECT_HANDLE objectID, CK_ATTRIBUTE_TYPE type, CK_VOID_PTR pValue, CK_ULONG ulValueLen) {
+CK_RV SoftDatabase::saveAttribute(CK_OBJECT_HANDLE objectID, CK_ATTRIBUTE_TYPE type, CK_VOID_PTR_CONST pValue, CK_ULONG ulValueLen) {
   sqlite3_bind_int(select_attri_id_sql, 1, objectID);
   sqlite3_bind_int(select_attri_id_sql, 2, type);
 
