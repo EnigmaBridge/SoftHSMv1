@@ -13,14 +13,14 @@
 
 namespace createUO {
     namespace consts {
-        const char * type = "type";
-        const char * generation = "generation";
-        const char * commkey = "commkey";
-        const char * billingkey = "billingkey";
-        const char * appkey = "appkey";
+        extern const char * const type;
+        extern const char * const generation;
+        extern const char * const commkey;
+        extern const char * const billingkey;
+        extern const char * const appkey;
 
-        const char * yes = "yes";
-        const char * no = "no";
+        extern const char * const yes;
+        extern const char * const no;
 
         namespace uoType {
             const int HMAC = 0x0001;

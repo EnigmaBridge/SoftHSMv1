@@ -9,6 +9,20 @@
 #include "Retry.h"
 #define TAG "ShsmCreateUO: "
 
+// Constants.
+namespace createUO {
+    namespace consts {
+        const char * const type = "type";
+        const char * const generation = "generation";
+        const char * const commkey = "commkey";
+        const char * const billingkey = "billingkey";
+        const char * const appkey = "appkey";
+
+        const char * const yes = "yes";
+        const char * const no = "no";
+    }
+}
+
 Json::Value ShsmCreateUO::getDefaultTemplateRequestSpec() {
     using namespace createUO;
 
