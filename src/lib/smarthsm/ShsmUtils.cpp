@@ -437,12 +437,11 @@ void ShsmUtils::merge(Json::Value& a, const Json::Value& b) {
 }
 
 Json::Value ShsmUtils::requestWithRetry(const Retry & retry, const char * host, int port, Json::Value & request) {
-    int curRetry = 0;
+    unsigned curRetry = 0;
     Json::Value errRet(0); // null error response.
 
     // Repeat several times.
-    bool success = false;
-    for(; curRetry < retry.getMaxRetry(); curRetry++) {
+    for(; curRetry < retry.getMaxRetry(); ++curRetry) {
         // Not so fast, wait a small amount of time, randomize requests.
         if (curRetry > 0){
             retry.sleepJitter();

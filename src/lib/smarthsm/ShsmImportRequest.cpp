@@ -17,16 +17,4 @@ ShsmImportRequest::~ShsmImportRequest() {
 
 }
 
-int ShsmImportRequest::setTpl(std::string tplHex) {
-    size_t len = (size_t)ShsmApiUtils::getJsonByteArraySize(tplHex);
-    if (len <= 0){
-        ERROR_MSGF(TAG"Template hex format invalid");
-        return 1;
-    }
-
-    this->tpl.resize(len);
-    size_t realSize = ShsmApiUtils::hexToBytes(tplHex, this->tpl.begin(), (size_t) len);
-    this->tpl.resize(realSize);
-    return 0;
-}
 

@@ -142,6 +142,15 @@ public:
      * @return
      */
     static int encryptRSA(const Json::Value & rsaKey, BotanSecureByteVector & buffer, BotanSecureByteVector & dest);
+
+    /**
+     * Converts hex encoded byte array to secure byte vector.
+     *
+     * @param hex
+     * @param vector
+     * @return
+     */
+    static int parseHexToVector(std::string hex, BotanSecureByteVector & vector);
 };
 
 

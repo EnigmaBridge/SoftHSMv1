@@ -12,7 +12,7 @@
 class ShsmImportRequest {
 public:
 
-    ShsmImportRequest(): tpl(NULL) {};
+    ShsmImportRequest(){};
 
     virtual ~ShsmImportRequest();
 
@@ -20,13 +20,6 @@ public:
      * Generates random COMM keys.
      */
     void generateCommKeys();
-
-    /**
-     * Sets hexcoded template
-     * @param tplHex
-     * @return
-     */
-    int setTpl(std::string tplHex);
 
     const BotanSecureByteKey &getCommEncKey() const {
         return commEncKey;
@@ -36,12 +29,16 @@ public:
         return commMacKey;
     }
 
-    BotanSecureByteVector & getTpl() const {
+    BotanSecureByteVector const & getTpl() const {
         return tpl;
     }
 
-    BotanSecureByteVector &getTplPrepared() const {
+    BotanSecureByteVector const & getTplPrepared() const {
         return tplPrepared;
+    }
+
+    void setTpl(const BotanSecureByteVector &tpl) {
+        ShsmImportRequest::tpl = tpl;
     }
 
     void setTplPrepared(BotanSecureByteVector &tplPrepared) {

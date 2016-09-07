@@ -70,10 +70,7 @@ Json::Value ShsmCreateUO::getTemplateRequest(SoftSlot *slot, const Json::Value *
 }
 
 Json::Value ShsmCreateUO::templateRequest(SoftSlot *slot, const Json::Value *spec) {
-    int curRetry = 0;
     Retry retry;
-    Json::Value errRet(0); // null error response.
-
     if (slot->config != nullptr) {
         retry.configure(*slot->config);
     }
@@ -108,6 +105,10 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
         return nullptr;
     }
 
+    // unused, handy later.
+    (void)slot;
+    (void)tplReqSpec;
+
     // Shortcut
     const Json::Value & tpl = (*tplResp)["result"];
 
@@ -116,9 +117,14 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
     req->generateCommKeys();
 
     // Generate template in bytes.
-    req->setTpl(tpl["template"].asString());
-    BotanSecureByteVector & tplVector = req->getTpl();
-    Botan::byte * const tplBuff = tplVector;
+    BotanSecureByteVector tplVector;
+    int res = ShsmCreateUO::parseHexToVector(tpl["template"].asString(), tplVector);
+    if (res != 0){
+        if (statusCode) *statusCode = -9;
+        return nullptr;
+    }
+
+    Botan::byte * const tplBuff = tplVector.begin();
 
     // Fill in the keys - only comm keys.
     const Json::Value & keysOffset = tpl["keyoffsets"];
@@ -140,11 +146,11 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
 
         // We accept only comm keys here, deal with it.
         if (keyType == "comenc"){
-            commKey = req->getCommEncKey();
+            commKey = req->getCommEncKey().begin();
             commKeyLen = SHSM_COMM_KEY_ENC_SIZE;
 
         } else if (keyType == "commac"){
-            commKey = req->getCommMacKey();
+            commKey = req->getCommMacKey().begin();
             commKeyLen = SHSM_COMM_KEY_MAC_SIZE;
 
         } else {
@@ -174,7 +180,7 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
     // Encrypt part of the buffer.
     const size_t encOffset = (size_t)tpl["encryptionoffset"].asInt() / 8;
     BotanSecureByteVector encryptedTemplate;
-    int res = encryptTemplate(tplEncKey, tplMacKey, encOffset, tplVector, encryptedTemplate);
+    res = encryptTemplate(tplEncKey, tplMacKey, encOffset, tplVector, encryptedTemplate);
     if (res != 0){
         ERROR_MSGF((TAG"Encryption failed (sym)"));
         if (statusCode) *statusCode = -4;
@@ -242,12 +248,12 @@ int ShsmCreateUO::encryptTemplate(const BotanSecureByteKey & encKey, const Botan
     pipe.start_msg();
 
 #ifdef EB_DEBUG
-    {std::string dumpStr = ShsmApiUtils::bytesToHex(buffer, buffer.size());
+    {std::string dumpStr = ShsmApiUtils::bytesToHex(buffer.begin(), buffer.size());
     DEBUG_MSGF((TAG"To process buffer: [%s]", dumpStr.c_str()));}
 #endif
 
     // Write header of form 0x1f | <UOID-4B>
-    pipe.write(buffer+encOffset, (size_t)buffer.size() - encOffset);
+    pipe.write(buffer.begin()+encOffset, (size_t)buffer.size() - encOffset);
     pipe.end_msg();
 
     // Secure buffer.
@@ -255,7 +261,7 @@ int ShsmCreateUO::encryptTemplate(const BotanSecureByteKey & encKey, const Botan
     BotanSecureByteVector encryptedData(encryptedDataBuffSize);
 
     // Read encrypted data from the pipe.
-    size_t cipLen = pipe.read(encryptedData, (size_t)encryptedDataBuffSize, 0);
+    size_t cipLen = pipe.read(encryptedData.begin(), (size_t)encryptedDataBuffSize, 0);
 #ifdef EB_DEBUG
     DEBUG_MSGF((TAG"Encrypted message len: %lu", cipLen));
 #endif
@@ -263,12 +269,12 @@ int ShsmCreateUO::encryptTemplate(const BotanSecureByteKey & encKey, const Botan
     // Mac the whole buffer, with padding.
     Botan::Pipe pipeMac(new Botan::MAC_Filter("CBC_MAC(AES-256/PKCS7)", aesMacKey));
     pipeMac.start_msg();
-    pipeMac.write(buffer, encOffset);
-    pipeMac.write(encryptedData, cipLen);
+    pipeMac.write(buffer.begin(), encOffset);
+    pipeMac.write(encryptedData.begin(), cipLen);
     pipeMac.end_msg();
 
     // Read MAC on encrypted data from the pipe
-    size_t macLen = pipeMac.read(encryptedData+cipLen, encryptedDataBuffSize - cipLen);
+    size_t macLen = pipeMac.read(encryptedData.begin()+cipLen, encryptedDataBuffSize - cipLen);
 
 #ifdef EB_DEBUG
     DEBUG_MSGF((TAG"MAC message len: %lu", macLen));
@@ -304,5 +310,19 @@ Json::Value ShsmCreateUO::getBestImportKey(const Json::Value & importKeys){
 
 int ShsmCreateUO::encryptRSA(const Json::Value & rsaKey, BotanSecureByteVector & buffer, BotanSecureByteVector & dest){
     // TODO: implement.
+    return -1;
+}
+
+int ShsmCreateUO::parseHexToVector(std::string hex, BotanSecureByteVector &vector) {
+    size_t len = (size_t)ShsmApiUtils::getJsonByteArraySize(hex);
+    if (len <= 0){
+        ERROR_MSGF((TAG"Template hex format invalid"));
+        return 1;
+    }
+
+    vector.resize(len);
+    size_t realSize = ShsmApiUtils::hexToBytes(hex, vector.begin(), (size_t) len);
+    vector.resize(realSize);
+    return 0;
 }
 
