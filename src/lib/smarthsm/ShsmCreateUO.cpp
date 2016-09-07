@@ -306,7 +306,7 @@ int ShsmCreateUO::encryptTemplate(const BotanSecureByteKey & encKey, const Botan
 #endif
 
     // Write header of form 0x1f | <UOID-4B>
-    pipe.write(buffer.begin()+encOffset, (size_t)buffer.size() - encOffset);
+    pipe.write(buffer.begin() + encOffset, (size_t)buffer.size() - encOffset);
     pipe.end_msg();
 
     // Secure buffer.
@@ -319,23 +319,34 @@ int ShsmCreateUO::encryptTemplate(const BotanSecureByteKey & encKey, const Botan
     DEBUG_MSGF((TAG"Encrypted message len: %lu", cipLen));
 #endif
 
+    size_t paddingSize = 16 - ((cipLen + encOffset) % 16);
+    BotanSecureByteVector pkcs7Padding(paddingSize);
+    for(int i = 0; i < paddingSize; i++){
+        pkcs7Padding.begin()[i] = (Botan::byte)paddingSize;
+    }
+
     // Mac the whole buffer, with padding.
+    BotanSecureByteVector macBuffer(16);
     Botan::Pipe pipeMac(new Botan::MAC_Filter("CBC-MAC(AES-256)", aesMacKey));
     pipeMac.start_msg();
     pipeMac.write(buffer.begin(), encOffset);
     pipeMac.write(encryptedData.begin(), cipLen);
+    pipeMac.write(pkcs7Padding.begin(), paddingSize);
     pipeMac.end_msg();
 
     // Read MAC on encrypted data from the pipe
-    size_t macLen = pipeMac.read(encryptedData.begin()+cipLen, encryptedDataBuffSize - cipLen);
+    size_t macLen = pipeMac.read(macBuffer.begin(), 16);
 
 #ifdef EB_DEBUG
-    DEBUG_MSGF((TAG"MAC message len: %lu", macLen));
+    DEBUG_MSGF((TAG"MAC message len: %lu, padding length: %lu: ", macLen, paddingSize));
 #endif
 
-    dest.resize(cipLen+macLen+encOffset);
-    memcpy(dest.begin(),           buffer.begin(), encOffset);
-    memcpy(dest.begin()+encOffset, encryptedData.begin(), cipLen+macLen);
+    int offset = 0;
+    dest.resize(encOffset+cipLen+macLen+paddingSize);
+    memcpy(dest.begin(),           buffer.begin(),        encOffset);    offset+=encOffset;
+    memcpy(dest.begin()+offset,    encryptedData.begin(), cipLen);       offset+=cipLen;
+    memcpy(dest.begin()+offset,    pkcs7Padding.begin(),  paddingSize);  offset+=paddingSize;
+    memcpy(dest.begin()+offset,    macBuffer.begin(),     macLen);
     return 0;
 }
 
