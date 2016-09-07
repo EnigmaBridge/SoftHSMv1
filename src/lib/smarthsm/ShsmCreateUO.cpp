@@ -44,7 +44,7 @@ Json::Value ShsmCreateUO::getDefaultTemplateRequestSpec() {
     jReq["credit"] = 32677; // <1-32767>, a limit a seed card can provide to the EB service
 
     Json::Value jGen;
-    jGen[consts::commkey] = consts::gen::SERVER_RANDOM;
+    jGen[consts::commkey] = consts::gen::CLIENT;
     jGen[consts::billingkey] = consts::gen::SERVER_RANDOM;
     jGen[consts::appkey] = consts::gen::SERVER_RANDOM;
 
@@ -89,6 +89,10 @@ void ShsmCreateUO::setType(Json::Value *spec, int type) {
     char buff[16];
     snprintf(buff, 16, "%x", type);
     (*spec)[createUO::consts::type] = Json::Value(buff);
+
+    // Generation - set accordingly.
+    (*spec)[createUO::consts::generation][createUO::consts::appkey] = createUO::consts::gen::SERVER_RANDOM;
+    (*spec)[createUO::consts::generation][createUO::consts::commkey] = createUO::consts::gen::CLIENT;
 }
 
 int ShsmCreateUO::setRsaType(Json::Value * spec, int bitSize){
