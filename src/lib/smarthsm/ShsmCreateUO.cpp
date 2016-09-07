@@ -45,8 +45,8 @@ Json::Value ShsmCreateUO::getDefaultTemplateRequestSpec() {
 
     Json::Value jGen;
     jGen[consts::commkey] = consts::gen::CLIENT;
-    jGen[consts::billingkey] = consts::gen::SERVER_RANDOM;
-    jGen[consts::appkey] = consts::gen::SERVER_RANDOM;
+    jGen[consts::billingkey] = consts::gen::LEGACY_RANDOM;
+    jGen[consts::appkey] = consts::gen::LEGACY_RANDOM;
 
     jReq[consts::generation] = jGen;
     return jReq;
@@ -91,7 +91,7 @@ void ShsmCreateUO::setType(Json::Value *spec, int type) {
     (*spec)[createUO::consts::type] = Json::Value(buff);
 
     // Generation - set accordingly.
-    (*spec)[createUO::consts::generation][createUO::consts::appkey] = createUO::consts::gen::SERVER_RANDOM;
+    (*spec)[createUO::consts::generation][createUO::consts::appkey] = createUO::consts::gen::LEGACY_RANDOM;
     (*spec)[createUO::consts::generation][createUO::consts::commkey] = createUO::consts::gen::CLIENT;
 }
 
