@@ -26,8 +26,7 @@ SHSM_KEY_HANDLE ShsmPrivateKey::getKeyId() const {
 }
 
 ShsmPrivateKey::ShsmPrivateKey(const Botan::BigInt &n, const Botan::BigInt &e, std::shared_ptr<ShsmUserObjectInfo> uoin)
-        : IF_Scheme_PrivateKey(), RSA_PublicKey(n, e),
-          uo(uoin) {
+        : RSA_PublicKey(n, e), IF_Scheme_PrivateKey(), uo(uoin) {
 
     // Multiple inheritance overlap fix
     this->Botan::RSA_PublicKey::n = n;
