@@ -552,7 +552,13 @@ CK_OBJECT_HANDLE SoftDatabase::addRSAKeyPriv(CK_STATE state, ShsmPrivateKey *rsa
           state, dynamic_cast<Botan::IF_Scheme_PrivateKey *>(rsaKey), pPrivateKeyTemplate, ulPrivateKeyAttributeCount);
 
   // Serialize UO part.
+  ShsmUserObjectInfo * uo = rsaKey->getUo().get();
   CK_BBOOL ckTrue = CK_TRUE;
+  SHSM_KEY_HANDLE uoId = uo->getKeyId();
+  SHSM_KEY_TYPE uoType = uo->getKeyType();
+  BotanSecureByteKey encKey = *(uo->getEncKey().get());
+  BotanSecureByteKey macKey = *(uo->getMacKey().get());
+  int port = uo->getPort();
 
   // Begin the transaction
   if(sqlite3_exec(db, "BEGIN IMMEDIATE;", NULL, NULL, NULL) != SQLITE_OK) {
@@ -562,19 +568,30 @@ CK_OBJECT_HANDLE SoftDatabase::addRSAKeyPriv(CK_STATE state, ShsmPrivateKey *rsa
   CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_KEY,
                                         &ckTrue, sizeof(ckTrue)) != CKR_OK);
   CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_HANDLE,
-                                        &ckTrue, sizeof(ckTrue)) != CKR_OK);
+                                        &uoId, sizeof(SHSM_KEY_HANDLE)) != CKR_OK);
   CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_TYPE,
-                                        &ckTrue, sizeof(ckTrue)) != CKR_OK);
+                                        &uoType, sizeof(SHSM_KEY_TYPE)) != CKR_OK);
   CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_ENCKEY,
-                                        &ckTrue, sizeof(ckTrue)) != CKR_OK);
+                                        encKey.begin(), encKey.size()) != CKR_OK);
   CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_MACKEY,
-                                        &ckTrue, sizeof(ckTrue)) != CKR_OK);
-  CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_APIKEY,
-                                        &ckTrue, sizeof(ckTrue)) != CKR_OK);
-  CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_HOSTNAME,
-                                        &ckTrue, sizeof(ckTrue)) != CKR_OK);
-  CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_PORT,
-                                        &ckTrue, sizeof(ckTrue)) != CKR_OK);
+                                        macKey.begin(), macKey.size()) != CKR_OK);
+
+  if (uo->getApiKey() && !uo->getApiKey().get()->empty()) {
+      std::string val = *uo->getApiKey().get();
+      CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_APIKEY,
+                                            val.c_str(), val.length()) != CKR_OK);
+  }
+
+  if (uo->getHostname() && !uo->getHostname().get()->empty()) {
+      std::string val = *uo->getHostname().get();
+      CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_HOSTNAME,
+                                        val.c_str(), val.length()) != CKR_OK);
+  }
+
+    if (port > 0) {
+      CHECK_DB_RESPONSE(this->saveAttribute(objectID, CKA_SHSM_UO_PORT,
+                                              &port, sizeof(port)) != CKR_OK);
+    }
 
   sqlite3_exec(db, "COMMIT;", NULL, NULL, NULL);
   return objectID;
