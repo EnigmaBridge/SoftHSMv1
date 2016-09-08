@@ -64,7 +64,7 @@ Botan::AutoSeeded_RNG ShsmApiUtils::prng;
 #  define DEBUG_LOG(arg) logDebugSyslogF arg
 #endif
 
-#define READ_STRING_BUFFER_SIZE 8192
+#define READ_STRING_BUFFER_SIZE 4096
 
 int ShsmApiUtils::setSocketTimeout(int socket, int timeoutType, uint64_t timeoutValueMilli) {
     if (timeoutValueMilli == 0){
