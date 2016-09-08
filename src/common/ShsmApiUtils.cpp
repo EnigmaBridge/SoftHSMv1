@@ -139,7 +139,7 @@ int ShsmApiUtils::writeToSocket(int sockfd, std::string buffToWrite) {
     ssize_t written=0;
     while(writtenTotal != clen) {
         written = write(sockfd, cstr + writtenTotal, clen - writtenTotal);
-        DEBUG_LOG(("Socket written :%d\n", (int) written));
+        DEBUG_LOG(("Socket written: %d\n", (int) written));
         if (written < 0){
             return -1;
         }
@@ -156,7 +156,6 @@ std::string ShsmApiUtils::readStringFromSocket(int sockfd) {
 
     ssize_t bytesRead = 0;
     while((bytesRead = read(sockfd, buffer, READ_STRING_BUFFER_SIZE)) > 0){
-        DEBUG_LOG(("Socket read :%d\n", (int) bytesRead));
         sb.write(buffer, bytesRead);
     }
 
@@ -187,15 +186,15 @@ std::string ShsmApiUtils::request(const char *hostname, int port, std::string re
         return "";
     }
 
-    DEBUG_LOG(("Socket data written\n"));
+    DEBUG_LOG(("Socket data written, length: %lu\n", request.length()));
 
     // Read JSON response from HSMS.
     std::string response = ShsmApiUtils::readStringFromSocket(sockfd);
-    DEBUG_LOG(("Socket data read [%s]\n", response.c_str()));
     // Closing opened socket. Refactor for performance.
     close(sockfd);
 
     gettimeofday(&tm2, NULL);
+    DEBUG_LOG(("Socket data read, length: %lu\n", response.length()));
     DEBUG_LOG(("Time spent in the request call: %ld ms\n", ShsmApiUtils::diffTimeMilli(&tm1, &tm2)));
 
     if (status) *status = 0;

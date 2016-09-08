@@ -476,7 +476,7 @@ Json::Value ShsmUtils::requestWithRetry(const Retry & retry, const char * host, 
         }
 
 #ifdef EB_DEBUG
-        DEBUG_MSGF((TAG"Request [%s]", json.c_str()));
+        DEBUG_MSGF((TAG"Request length: %lu, [%s]", json.length(), json.c_str()));
 #endif
         // Parse response, extract result, return it.
         Json::Value root(0);   // 'root' will contain the root value after parsing.
@@ -484,7 +484,7 @@ Json::Value ShsmUtils::requestWithRetry(const Retry & retry, const char * host, 
         bool parsedSuccess = reader.parse(response, root, false);
         if(!parsedSuccess || root.isNull()) {
             if (status) *status = -3;
-            ERROR_MSG(TAG, "Could not parse input JSON");
+            ERROR_MSG(TAG, "Could not parse input JSON / response is null");
             ERROR_MSGF((TAG"Response: [%s]", response.c_str()));
             continue;
         }
