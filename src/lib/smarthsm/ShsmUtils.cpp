@@ -464,14 +464,14 @@ Json::Value ShsmUtils::requestWithRetry(const Retry & retry, const char * host, 
         std::string response = ShsmApiUtils::request(host, port, json, &reqResult);
         if (reqResult != 0){
             if (status) *status = -1;
-            DEBUG_MSGF((TAG"SHSM network request result failed, code=%d", reqResult));
+            WARNING_MSGF((TAG"SHSM network request result failed, code=%d", reqResult));
             continue;
         }
 
         // Nothing to parse
         if (response.empty()){
             if (status) *status = -2;
-            DEBUG_MSGF((TAG"SHSM returned empty response"));
+            WARNING_MSGF((TAG"SHSM returned empty response"));
             continue;
         }
 
