@@ -447,12 +447,9 @@ void ShsmUtils::merge(Json::Value& a, const Json::Value& b) {
     }
 }
 
-Json::Value ShsmUtils::requestWithRetry(const Retry & retry, const char * host, int port, Json::Value & request) {
-    unsigned curRetry = 0;
-    Json::Value errRet(0); // null error response.
-
-    // Repeat several times.
-    for(; curRetry < retry.getMaxRetry(); ++curRetry) {
+Json::Value ShsmUtils::requestWithRetry(const Retry & retry, const char * host, int port, Json::Value & request, int * status) {
+    Json::Value lastResponse(0);
+    for(unsigned curRetry = 0; curRetry < retry.getMaxRetry(); ++curRetry) {
         // Not so fast, wait a small amount of time, randomize requests.
         if (curRetry > 0){
             retry.sleepJitter();
@@ -466,7 +463,15 @@ Json::Value ShsmUtils::requestWithRetry(const Retry & retry, const char * host, 
         int reqResult = 0;
         std::string response = ShsmApiUtils::request(host, port, json, &reqResult);
         if (reqResult != 0){
+            if (status) *status = -1;
             DEBUG_MSGF((TAG"SHSM network request result failed, code=%d", reqResult));
+            continue;
+        }
+
+        // Nothing to parse
+        if (response.empty()){
+            if (status) *status = -2;
+            DEBUG_MSGF((TAG"SHSM returned empty response"));
             continue;
         }
 
@@ -474,11 +479,12 @@ Json::Value ShsmUtils::requestWithRetry(const Retry & retry, const char * host, 
         DEBUG_MSGF((TAG"Request [%s]", json.c_str()));
 #endif
         // Parse response, extract result, return it.
-        Json::Value root;   // 'root' will contain the root value after parsing.
+        Json::Value root(0);   // 'root' will contain the root value after parsing.
         Json::Reader reader;
         bool parsedSuccess = reader.parse(response, root, false);
-        if(!parsedSuccess) {
-            ERROR_MSG(TAG, "Could not read data from socket");
+        if(!parsedSuccess || root.isNull()) {
+            if (status) *status = -3;
+            ERROR_MSG(TAG, "Could not parse input JSON");
             ERROR_MSGF((TAG"Response: [%s]", response.c_str()));
             continue;
         }
@@ -486,16 +492,23 @@ Json::Value ShsmUtils::requestWithRetry(const Retry & retry, const char * host, 
         // Check status code.
         unsigned int resultCode = ShsmApiUtils::getStatus(root);
         if (resultCode != EB_RESPONSE_CODE_OK){
+            if (status){
+                *status = -4;
+                lastResponse = root;
+            }
             ERROR_MSG(TAG, "Result code is not success");
             ERROR_MSGF((TAG"Result code: %x, response: [%s]", resultCode, response.c_str()));
             continue;
         }
 
+        if (status) *status = 0;
         return root;
     }
 
     // If here -> without success.
-    return Json::Value(0);
+    // If status code was not set, this has to be Value(0) so user can detect failure.
+    // Otherwise the last parsed failed response is returned.
+    return lastResponse;
 }
 
 

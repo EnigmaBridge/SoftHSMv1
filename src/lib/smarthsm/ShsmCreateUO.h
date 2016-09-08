@@ -116,7 +116,7 @@ public:
      * @param spec
      * @return
      */
-    static Json::Value templateRequest(SoftSlot * slot, const Json::Value * spec);
+    static Json::Value templateRequest(SoftSlot * slot, const Json::Value * spec, int * status = NULL);
 
     /**
      * Prepares UO template for import.
@@ -194,9 +194,10 @@ public:
      *
      * @param slot
      * @param req
+     * @param status
      * @return
      */
-    static Json::Value importObject(SoftSlot * slot, ShsmImportRequest * req);
+    static Json::Value importObject(SoftSlot * slot, ShsmImportRequest * req, int * status = NULL);
 
     /**
      * Creates UOInfo object from the import response.

@@ -116,7 +116,10 @@ public:
      * @param request null json in case of an error.
      * @return
      */
-    static Json::Value requestWithRetry(const Retry & retry, const char * host, int port, Json::Value & request);
+    static Json::Value requestWithRetry(const Retry & retry,
+                                        const char * host, int port,
+                                        Json::Value & request,
+                                        int * status = NULL);
 };
 
 

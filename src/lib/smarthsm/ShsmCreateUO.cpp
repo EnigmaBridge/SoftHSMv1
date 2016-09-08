@@ -122,12 +122,12 @@ Json::Value ShsmCreateUO::getTemplateRequest(SoftSlot *slot, const Json::Value *
     return jReq;
 }
 
-Json::Value ShsmCreateUO::templateRequest(SoftSlot *slot, const Json::Value *spec) {
+Json::Value ShsmCreateUO::templateRequest(SoftSlot *slot, const Json::Value *spec, int * status) {
     // Template request, nonce will be regenerated.
     Json::Value req = ShsmCreateUO::getTemplateRequest(slot, spec);
 
     // Do the request with retry. isNull() == true in case of a fail.
-    Json::Value resp = ShsmUtils::requestWithRetry(slot->getRetry(), slot->host.c_str(), slot->getEnrollPort(), req);
+    Json::Value resp = ShsmUtils::requestWithRetry(slot->getRetry(), slot->host.c_str(), slot->getEnrollPort(), req, status);
 
     return resp;
 }
@@ -453,7 +453,7 @@ int ShsmCreateUO::parseHexToVector(std::string hex, BotanSecureByteVector &vecto
     return 0;
 }
 
-Json::Value ShsmCreateUO::importObject(SoftSlot *slot, ShsmImportRequest *req) {
+Json::Value ShsmCreateUO::importObject(SoftSlot *slot, ShsmImportRequest *req, int * status) {
     size_t tplSize = req->getTplPrepared().size();
     const Botan::byte * tplHex = req->getTplPrepared().begin();
     std::string tplHexString = ShsmApiUtils::bytesToHex(tplHex, tplSize);
@@ -473,7 +473,7 @@ Json::Value ShsmCreateUO::importObject(SoftSlot *slot, ShsmImportRequest *req) {
     jReq["data"] = data;
 
     // Do the request with retry. isNull() == true in case of a fail.
-    Json::Value resp = ShsmUtils::requestWithRetry(slot->getRetry(), slot->host.c_str(), slot->getEnrollPort(), jReq);
+    Json::Value resp = ShsmUtils::requestWithRetry(slot->getRetry(), slot->host.c_str(), slot->getEnrollPort(), jReq, status);
     return resp;
 }
 
@@ -571,9 +571,9 @@ ShsmPrivateKey *ShsmCreateUO::createNewRsaKey(SoftSlot *slot, Json::Value *extra
     }
 
     // Fetch template for new UO.
-    Json::Value tplResp = ShsmCreateUO::templateRequest(slot, &tplSpec);
-    if (tplResp.isNull()){
-        DEBUG_MSG("C_GenerateKeyPair", "Could not fetch template");
+    Json::Value tplResp = ShsmCreateUO::templateRequest(slot, &tplSpec, &res);
+    if (tplResp.isNull() || res != 0){
+        DEBUG_MSGF(("C_GenerateKeyPair: Could not fetch template, code: %d", res));
         if (status) *status = -2;
         return nullptr;
     }
@@ -587,9 +587,9 @@ ShsmPrivateKey *ShsmCreateUO::createNewRsaKey(SoftSlot *slot, Json::Value *extra
     }
 
     // Import the initialized UO
-    Json::Value importResp = ShsmCreateUO::importObject(slot, importReq.get());
-    if (importResp.isNull()){
-        DEBUG_MSGF(("C_GenerateKeyPair: Import failed"));
+    Json::Value importResp = ShsmCreateUO::importObject(slot, importReq.get(), &res);
+    if (importResp.isNull() || res != 0){
+        DEBUG_MSGF(("C_GenerateKeyPair: Import failed, code: %d", res));
         if (status) *status = -4;
         return nullptr;
     }
