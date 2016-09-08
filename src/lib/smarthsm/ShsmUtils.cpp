@@ -456,7 +456,7 @@ Json::Value ShsmUtils::requestWithRetry(const Retry & retry, const char * host, 
         }
 
         // Generate new nonce with each attempt.
-        request["nonce"] = ShsmApiUtils::generateNonce(8);
+        request["nonce"] = ShsmApiUtils::generateNonce(16);
         std::string json = ShsmApiUtils::getRequestBody(request);
 
         // Perform the request.

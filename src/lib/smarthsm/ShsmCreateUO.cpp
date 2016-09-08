@@ -117,7 +117,7 @@ Json::Value ShsmCreateUO::getTemplateRequest(SoftSlot *slot, const Json::Value *
     jReq["function"] = "GetUserObjectTemplate";
     jReq["version"] = "1.0";
     jReq["objectid"] = ShsmApiUtils::generateApiObjectId(slot->apiKey, 0x1);
-    jReq["nonce"] = ShsmApiUtils::generateNonce(8);
+    jReq["nonce"] = ShsmApiUtils::generateNonce(16);
     jReq["data"] = getTemplateRequestSpec(spec);
     return jReq;
 }
@@ -469,7 +469,7 @@ Json::Value ShsmCreateUO::importObject(SoftSlot *slot, ShsmImportRequest *req, i
     jReq["function"] = "CreateUserObject";
     jReq["version"] = "1.0";
     jReq["objectid"] = ShsmApiUtils::generateApiObjectId(slot->apiKey, 0x1);
-    jReq["nonce"] = ShsmApiUtils::generateNonce(8);
+    jReq["nonce"] = ShsmApiUtils::generateNonce(16);
     jReq["data"] = data;
 
     // Do the request with retry. isNull() == true in case of a fail.
