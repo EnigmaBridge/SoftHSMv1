@@ -25,6 +25,16 @@
 // TODO: if win32, do differently.
 #include <sys/time.h>
 
+// Logging
+#ifndef WIN32
+#  include <syslog.h>
+#  include <stdarg.h>
+#  include <stdio.h>
+#else
+#  include <windows.h>
+#  include <stdio.h>
+#endif
+
 const char * EB_REQUEST_TYPES[] = {
     "PLAINAES",
     "PLAINAESDECRYPT",
@@ -45,17 +55,14 @@ const char * EB_REQUEST_TYPES[] = {
 // PRNG, auto seeded, static.
 Botan::AutoSeeded_RNG ShsmApiUtils::prng;
 
-// Logging macro
-#define DEBUG_LOG(arg) debugLog arg
-static void debugLog(const char * fmt, ...){
-    char msgBuff[2048];
-    snprintf(msgBuff, 2048, "SoftHSM: %s", fmt);
-
-    va_list arg;
-    va_start(arg, fmt);
-    vfprintf(stderr, msgBuff, arg);
-    va_end(arg);
-}
+// Debugging logging
+#ifdef EB_DEBUG_TO_STDERR
+   static void debugLogStderr(const char * fmt, ...);
+#  define DEBUG_LOG(arg) logDebugSyslogF arg
+#else
+   static void logDebugSyslogF(const char *text, ...);
+#  define DEBUG_LOG(arg) logDebugSyslogF arg
+#endif
 
 #define READ_STRING_BUFFER_SIZE 8192
 
@@ -167,7 +174,7 @@ std::string ShsmApiUtils::request(const char *hostname, int port, std::string re
     if (sockfd < 0){
         DEBUG_LOG(("Socket could not be opened\n"));
         //DEBUG_MSG("decryptCall", "Socket could not be opened");
-        *status = sockfd;
+        if (status) *status = sockfd;
         return "";
     }
 
@@ -176,7 +183,7 @@ std::string ShsmApiUtils::request(const char *hostname, int port, std::string re
     int res = ShsmApiUtils::writeToSocket(sockfd, request);
     if (res < 0){
         //DEBUG_MSG("decryptCall", "Socket could not be used for writing");
-        *status = -20;
+        if (status) *status = -20;
         return "";
     }
 
@@ -191,7 +198,7 @@ std::string ShsmApiUtils::request(const char *hostname, int port, std::string re
     gettimeofday(&tm2, NULL);
     DEBUG_LOG(("Time spent in the request call: %ld ms\n", ShsmApiUtils::diffTimeMilli(&tm1, &tm2)));
 
-    *status = 0;
+    if (status) *status = 0;
     return response;
 }
 
@@ -594,3 +601,32 @@ std::string ShsmApiUtils::getRequestBody(const Json::Value &jsonRequest) {
     std::string json = jWriter.write(jsonRequest) + "\n"; // EOL at the end of the request.
     return json;
 }
+
+#ifdef EB_DEBUG_TO_STDERR
+
+static void debugLogStderr(const char * fmt, ...){
+    char msgBuff[2048];
+    snprintf(msgBuff, 2048, "SoftHSM: %s", fmt);
+
+    va_list arg;
+    va_start(arg, fmt);
+    vfprintf(stderr, msgBuff, arg);
+    va_end(arg);
+}
+#else
+
+static void logDebugSyslogF(const char *text, ...) {
+#ifndef WIN32
+    char msgBuff[4096];
+    snprintf(msgBuff, 4096, "SoftHSM: %s", text);
+
+    va_list arg;
+    va_start(arg, text);
+    vsyslog(LOG_DEBUG, msgBuff, arg);
+    va_end(arg);
+#else
+#warning not implemented
+#endif
+}
+
+#endif
