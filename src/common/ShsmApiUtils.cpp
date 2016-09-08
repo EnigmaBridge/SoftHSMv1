@@ -170,7 +170,7 @@ std::string ShsmApiUtils::request(const char *hostname, int port, std::string re
     DEBUG_LOG(("Going to create a socket to %s:%d\n", hostname, port));
 
     // Connect to a remote SHSM socket.
-    int sockfd = ShsmApiUtils::connectSocket(hostname, port, 45000ul, 45000ul);
+    int sockfd = ShsmApiUtils::connectSocket(hostname, port, 90000ul, 90000ul);
     if (sockfd < 0){
         DEBUG_LOG(("Socket could not be opened\n"));
         //DEBUG_MSG("decryptCall", "Socket could not be opened");
