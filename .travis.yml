@@ -13,6 +13,11 @@ cache:
   directories:
   - $HOME/botan
 
+# Coverity
+env:
+  global:
+    - secure: "a9/cp+n7+X6EE1EHdPfmaGb1JW5f+wSl7JwtPg70gOUvkPipsmJKHC5ad7E3P2Ia9a1seTQcJiXplY33HpJ5MpCTrXvSAsnnpH9Lv+nWnoz/y9xwwNfKkgEWQT24Ll05nfUFSXWPenLBw+ChftZVHFG6cRDcws47p2Evx0H5/KWKdzbLZBjy80EE9HTnW8wkhr3jhgF8VZsTE6iDIU88AZS70/bQYbEb02TxYrmOnCwBD8kiG3aMFhniXkcYJkr91+1/c92cXVzGZYy50RrzqY21Mfi7UuKeV+qHgvshx2/zOQuVaoHhd5jNExvZWkwPwls9zVJex/br7oVbT0/5RXCCm8t9hFHBTCoYm8XkKP8JpzeOSIMZMktKnnRpnlZlggMGIMgqsRFzVzIzAD5XqE7VsS6f10kLIKoCEkNzOOyV5nNkHagzRuOtHQEPBrdXHDQ2WdLa41H/PGnoOp4poKvgbYQ0PaHu1bVtg9cIAug+ENxoFX33xfjsgk4rFSHDmnkpWX1EhhR/GDhb94+9ZfNgeRlYOMCPl7z9XS3XmcRGlahOjQRLgzyrFjZogwE6Ov3yPsih3tjLTuXcon0RoSPfOUZwcpsTet4N+/q18T02oPrMj2ho/KirioUU4v7KOSWDh7x1Y1nmeifVkWDQ1JXRjXJ+oTXQIv+xk2p2zaw="	
+
 #before_install:
 #  - sudo apt-get update -qq
 #  - sudo apt-get install build-essential autoconf automake libtool libcppunit-dev libsqlite3-dev sqlite3 libbotan1.10-dev
@@ -39,8 +44,20 @@ before_install:
   - echo $LANG
   - echo $LC_ALL
   - bash install-botan-cached.sh
+  - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
 
 script:
   - ls -las
   - ls -las $HOME/botan
   - sh .travis.sh
+
+addons:
+  coverity_scan:
+    project:
+      name: "EnigmaBridge/SoftHSMv1"
+      description: "Build submitted via Travis CI"
+    notification_email: ph4r05@gmail.com
+    build_command_prepend: "bash install-botan-cached.sh"
+    build_command:   "bash .travis.sh"
+    branch_pattern: coverity_scan
+
