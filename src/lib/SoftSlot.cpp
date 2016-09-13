@@ -87,11 +87,6 @@ void SoftSlot::addSlot(CK_SLOT_ID newSlotID, char *newDBPath, const Json::Value 
     nextSlot = new SoftSlot();
     slotID = newSlotID;
     dbPath = newDBPath;
-    this->host = host;
-    this->port = port;
-    this->apiKey = apiKey;
-    this->key = key;
-    this->macKey = macKey;
     if (config != NULL_PTR){
         this->config = new Json::Value(*config);
 
