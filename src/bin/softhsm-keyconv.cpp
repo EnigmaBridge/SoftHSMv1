@@ -857,6 +857,10 @@ int save_dsa_bind(char *name, int ttl, Botan::Private_Key *priv_key, int key_fla
 
   // Create RDATA
   rdata_size = create_dsa_rdata(rdata, MAX_LINE, priv_key, key_flag, algorithm);
+  if(rdata_size < 0) {
+    fprintf(stderr, "Error: save_dsa_bind: Could not process DSA data.\n");
+    return 1;
+  }
 
   // Get the key tag
   key_tag = keytag(rdata, rdata_size);
