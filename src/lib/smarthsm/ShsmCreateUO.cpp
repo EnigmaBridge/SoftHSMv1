@@ -538,6 +538,8 @@ ShsmCreateUO::buildImportedPrivateKey(SoftSlot *slot,
     int res = 0;
     std::string pubKeyStr = importResp["result"]["publickey"].asString();
     Botan::RSA_PublicKey * pubKey = ShsmCreateUO::readSerializedRSAPubKey(pubKeyStr, &res);
+    std::unique_ptr<Botan::RSA_PublicKey> pubKeyUniquePtr(pubKey); // to release it after going out of scope
+
     if (pubKey == nullptr || res != 0){
         DEBUG_MSGF((TAG"Error: in parsing public key [%s]", pubKeyStr.c_str()));
         if (status) *status = -1;
