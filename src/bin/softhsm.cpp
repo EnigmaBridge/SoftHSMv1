@@ -798,6 +798,7 @@ int getShsmPubKey(char *hostname, int port, char *crtPath, char *apikey){
   std::ofstream crtFile(crtPath);
   crtFile.write((char *) crtByteArray, crtLen);
   crtFile.close();
+  free(crtByteArray);
 
   return 0;
 }
@@ -1078,6 +1079,7 @@ int certGenShsm(char *slot, char *userPIN, char *hostname, int port, char *apike
   rv = p11->C_CreateObject(hSession, privTemplate, 21, &hKey1);
   if(rv != CKR_OK) {
     free(objID);
+    freeKeyMaterial(keyMat);
     fprintf(stderr, "Error: Could not save the private key in the token, rv=%d.\n", (int) rv);
     return 1;
   }
