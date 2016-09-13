@@ -148,7 +148,9 @@ ShsmImportRequest *ShsmCreateUO::processTemplate(SoftSlot *slot,
         || (*tplResp)["result"]["template"].isNull()
         || (*tplResp)["result"]["objectid"].isNull())
     {
-        ERROR_MSGF((TAG"Template response invalid: [%s]", ShsmApiUtils::json2string(*tplResp).c_str()));
+        ERROR_MSGF((TAG"Template response invalid: [%s]",
+                (tplResp == nullptr || tplResp->isNull()) ? "" : ShsmApiUtils::json2string(*tplResp).c_str()
+        ));
         if (statusCode) *statusCode = -1;
         return nullptr;
     }
