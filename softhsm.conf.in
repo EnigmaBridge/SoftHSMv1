@@ -8,25 +8,29 @@
     {
         "slot": 0,
         "db": "@softhsmdbdir@/slot0.db",
-        "host": "site2.enigmabridge.com",
-        "port": 11110,
-        "enrollPort": 11112,
-        "apikey": "TEST_API",
-        "genRSA": true,
-
-        "retry": {
-            "maxRetry": 4,
-            "jitterBase": 150,
-            "jitterRand": 50
-        },
-
-        "createTpl": {
-            "environment": "dev",
-            "maxtps": "unlimited",
-            "core": "empty",
-            "credit": 32000
-        }
     }
+//    ,{
+//        "slot": 1,
+//        "db": "@softhsmdbdir@/slot1.db",
+//        "host": "site2.enigmabridge.com",
+//        "port": 11110,
+//        "enrollPort": 11112,
+//        "apikey": "TEST_API",
+//        "genRSA": true,
+//
+//        "retry": {
+//            "maxRetry": 4,
+//            "jitterBase": 150,
+//            "jitterRand": 50
+//        },
+//
+//        "createTpl": {
+//            "environment": "dev",
+//            "maxtps": "unlimited",
+//            "core": "empty",
+//            "credit": 32000
+//        }
+//    }
   ]
 }
 
