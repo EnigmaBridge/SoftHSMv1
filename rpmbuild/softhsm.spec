@@ -1,7 +1,7 @@
 Summary: Software version of a PKCS#11 Hardware Security Module Proxy for EnigmaBridge
 Name: softhsm-eb
-Version: 1.3.7
-Release: 2%{?dist}
+Version: 1.3.8
+Release: 1%{?dist}
 License: BSD
 Url: http://www.opendnssec.org/
 Source: http://www.opendnssec.org/files/source/%{name}-%{version}.tar.gz
