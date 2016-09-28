@@ -31,7 +31,7 @@ Json::Value ShsmCreateUO::getDefaultTemplateRequestSpec() {
     jReq["protocol"] = 1;
 
     jReq["environment"] = "dev"; // shows whether the UO should be for production (live), test (pre-production testing), or dev (development)
-    jReq["maxtps"] = "unlimited"; // maximum guaranteed TPS
+    jReq["maxtps"] = "one"; // maximum guaranteed TPS
     jReq["core"] = "empty"; // how many cards have UO loaded permanently
     jReq["persistence"] = "one_minute"; // once loaded onto card, how long will the UO stay there without use (this excludes the "core")
     jReq["priority"] = "default"; // this defines a) priority when the server capacity is fully utilised and it also defines how quickly new copies of UO are installed (pre-empting icreasing demand)
